@@ -1,0 +1,25 @@
+{
+  "appId": "com.deepusiva.tapRush",
+  "appName": "Tap Rush",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "android": {
+    "buildOptions": {
+      "keystorePath": "android/tapRush.keystore",
+      "keystoreAlias": "tapRush",
+      "releaseType": "APK"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0f0f0f",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "Dark",
+      "backgroundColor": "#0f0f0f"
+    }
+  }
+}
