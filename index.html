@@ -297,7 +297,11 @@ function guestPlay() {
   showHome(guest);
 }
 
-function doLogout() { GV.Auth.logout(); location.reload(); }
+function doLogout() {
+  GV.Auth.logout();
+  try { localStorage.removeItem(GV.KEYS.SESSION); sessionStorage.removeItem(GV.KEYS.SESSION); } catch(e){}
+  window.location.href = window.location.pathname + '?t=' + Date.now();
+}
 
 /* ── HOME ── */
 function showHome(user) {
