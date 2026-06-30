@@ -1,726 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0f0f0f" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <title>Tap Rush — Reflex Color Game</title>
-
-  <!-- AdMob (replace YOUR_ADMOB_APP_ID) -->
-  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <title>GameVerse — Play All Games</title>
+  <link rel="stylesheet" href="css/global.css"/>
   <style>
-    :root {
-      --bg: #0f0f0f;
-      --surface: #1a1a1a;
-      --surface2: #222222;
-      --border: rgba(255,255,255,0.08);
-      --border2: rgba(255,255,255,0.14);
-      --text: #f0f0f0;
-      --text2: #aaa;
-      --text3: #666;
-      --accent: #3B82F6;
-      --radius: 14px;
-      --rad-sm: 10px;
+    body { padding-bottom:20px; }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      min-height:100vh; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; padding:40px 24px;
+      gap:0;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    html, body {
-      width: 100%; height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      overflow: hidden;
-      touch-action: manipulation;
+    .auth-logo { font-size:56px; margin-bottom:12px; }
+    .auth-brand { font-size:28px; font-weight:800; letter-spacing:-0.5px; margin-bottom:4px; }
+    .auth-tagline { font-size:14px; color:var(--text2); margin-bottom:32px; }
+    .auth-tabs { display:flex; width:100%; max-width:360px; background:var(--surface); border-radius:var(--radius); padding:4px; gap:4px; margin-bottom:24px; }
+    .auth-tab { flex:1; height:36px; border:none; border-radius:var(--rad-sm); font-size:14px; font-weight:600; background:transparent; color:var(--text2); cursor:pointer; transition:background .15s, color .15s; }
+    .auth-tab.active { background:var(--accent); color:#fff; }
+    .auth-form { width:100%; max-width:360px; display:flex; flex-direction:column; gap:14px; }
+    .auth-divider { display:flex; align-items:center; gap:12px; color:var(--text3); font-size:12px; }
+    .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .remember-row { display:flex; align-items:center; gap:10px; }
+    .remember-row input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+    .remember-row label { font-size:13px; color:var(--text2); cursor:pointer; }
+
+    /* ── HOME ── */
+    #home-screen { display:none; padding-bottom:30px; }
+
+    /* TOP NAV */
+    .top-nav {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 16px 12px; position:sticky; top:0;
+      background:var(--bg); z-index:50; border-bottom:1px solid var(--border);
     }
-    #app {
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: flex-start;
-      overflow-y: auto;
-      padding: 0 0 env(safe-area-inset-bottom, 0) 0;
+    .nav-brand { font-size:20px; font-weight:800; letter-spacing:-0.3px; }
+    .nav-right { display:flex; align-items:center; gap:10px; }
+    .nav-coins {
+      display:flex; align-items:center; gap:5px;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:99px; padding:5px 12px; font-size:13px; font-weight:700; color:var(--yellow);
+    }
+    .nav-avatar {
+      width:34px; height:34px; border-radius:50%; background:var(--surface2);
+      border:2px solid var(--border2); font-size:18px;
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
     }
 
-    /* ── SCREENS ── */
-    .screen {
-      width: 100%; max-width: 420px;
-      min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center;
-      padding: 48px 20px 32px;
-      gap: 14px;
-    }
-    .hidden { display: none !important; }
+    /* HERO */
+    .hero { padding:20px 16px 0; }
+    .greeting { font-size:22px; font-weight:700; margin-bottom:4px; }
+    .greeting span { color:var(--accent); }
+    .hero-sub { font-size:14px; color:var(--text2); margin-bottom:16px; }
 
-    /* ── SPLASH ── */
-    .logo-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .logo-emoji { font-size: 64px; line-height: 1; }
-    .logo-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
-    .logo-sub { font-size: 14px; color: var(--text2); text-align: center; max-width: 260px; line-height: 1.5; }
+    /* CONTINUE PLAYING */
+    .section-title { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); padding:0 16px; margin-bottom:10px; }
+    .continue-scroll { display:flex; gap:10px; overflow-x:auto; padding:0 16px 4px; scrollbar-width:none; }
+    .continue-scroll::-webkit-scrollbar { display:none; }
+    .continue-card {
+      min-width:160px; background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:14px; cursor:pointer;
+      transition:border-color .15s, transform .1s; flex-shrink:0;
+    }
+    .continue-card:active { transform:scale(.96); }
+    .continue-card:hover { border-color:var(--border2); }
+    .cc-icon { font-size:28px; margin-bottom:8px; }
+    .cc-title { font-size:14px; font-weight:600; margin-bottom:2px; }
+    .cc-meta { font-size:11px; color:var(--text3); }
+    .cc-progress { height:3px; background:var(--surface3); border-radius:99px; margin-top:8px; overflow:hidden; }
+    .cc-progress-fill { height:100%; border-radius:99px; }
 
-    .best-chip {
-      background: rgba(234,179,8,0.15);
-      border: 1px solid rgba(234,179,8,0.3);
-      color: #EAB308;
-      font-size: 13px; font-weight: 600;
-      padding: 5px 14px; border-radius: 99px;
+    /* FILTER TABS */
+    .filter-tabs { display:flex; gap:8px; overflow-x:auto; padding:0 16px; scrollbar-width:none; margin-bottom:14px; }
+    .filter-tabs::-webkit-scrollbar { display:none; }
+    .filter-tab {
+      flex-shrink:0; height:32px; padding:0 14px; border-radius:99px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--text2); font-size:12px; font-weight:600; cursor:pointer;
+      transition:background .12s, border-color .12s, color .12s;
     }
+    .filter-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 
-    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-    .mode-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 14px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .15s, background .15s, transform .1s;
-      active-color: transparent;
+    /* GAME GRID */
+    .game-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px; }
+    .game-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:16px 14px; cursor:pointer;
+      transition:transform .12s, border-color .15s;
+      display:flex; flex-direction:column; gap:8px;
     }
-    .mode-card:active { transform: scale(0.96); background: var(--surface2); }
-    .mode-card.selected { border-color: var(--accent); }
-    .mode-icon { font-size: 30px; margin-bottom: 6px; }
-    .mode-name { font-size: 14px; font-weight: 600; color: var(--text); }
-    .mode-desc { font-size: 12px; color: var(--text3); margin-top: 3px; }
+    .game-card:active { transform:scale(.95); }
+    .game-card:hover { border-color:var(--border2); }
+    .gc-top { display:flex; align-items:flex-start; justify-content:space-between; }
+    .gc-icon { font-size:36px; line-height:1; }
+    .gc-saved { font-size:10px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:99px; }
+    .gc-title { font-size:14px; font-weight:700; }
+    .gc-desc { font-size:11px; color:var(--text3); line-height:1.4; }
+    .gc-genre { font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; align-self:flex-start; }
 
-    .section-label {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--text3);
-      width: 100%; text-align: left;
-    }
+    /* PROFILE MODAL */
+    .profile-stat { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+    .profile-stat:last-child { border-bottom:none; }
+    .profile-stat-label { font-size:13px; color:var(--text2); }
+    .profile-stat-val { font-size:14px; font-weight:700; }
 
-    .leaderboard-wrap {
-      width: 100%; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      overflow: hidden;
-    }
-    .lb-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 16px; border-bottom: 1px solid var(--border);
-    }
-    .lb-row:last-child { border-bottom: none; }
-    .lb-rank { font-size: 13px; font-weight: 700; color: var(--text3); width: 20px; text-align: center; }
-    .lb-mode { font-size: 13px; color: var(--text); flex: 1; }
-    .lb-score { font-size: 15px; font-weight: 700; color: var(--accent); }
-    .lb-empty { font-size: 13px; color: var(--text3); padding: 14px 16px; }
+    /* EMPTY */
+    .empty-state { text-align:center; padding:40px 20px; color:var(--text3); font-size:14px; }
 
-    /* ── HUD ── */
-    .hud {
-      width: 100%; display: flex;
-      justify-content: space-between; align-items: center;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 12px 18px;
-    }
-    .hud-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-    .hud-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); }
-    .hud-val { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1; }
-
-    .top-bar {
-      width: 100%; display: flex;
-      justify-content: space-between; align-items: center;
-    }
-    .level-pill {
-      font-size: 12px; font-weight: 600;
-      padding: 4px 12px; border-radius: 99px;
-      background: rgba(59,130,246,0.15);
-      border: 1px solid rgba(59,130,246,0.3);
-      color: var(--accent);
-    }
-    .lives-row { font-size: 16px; letter-spacing: 1px; }
-    .mode-pill {
-      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
-      text-transform: uppercase; color: var(--text3);
-    }
-
-    /* ── TIMER BAR ── */
-    .timer-wrap { width: 100%; height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
-    .timer-fill {
-      height: 100%; border-radius: 99px;
-      transition: width .08s linear, background .25s;
-      background: var(--accent);
-    }
-
-    /* ── QUESTION ── */
-    .q-box {
-      width: 100%;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 22px 20px;
-      text-align: center; min-height: 130px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-    }
-    .q-label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); }
-    .q-text { font-size: 32px; font-weight: 700; color: var(--text); }
-    .color-swatch {
-      width: 80px; height: 80px; border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.15);
-      transition: background .2s;
-    }
-
-    /* ── ANSWER BUTTONS ── */
-    .answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-    .answer-btn {
-      height: 68px; border-radius: var(--radius);
-      border: 2px solid rgba(255,255,255,0.1);
-      cursor: pointer; font-size: 15px; font-weight: 700;
-      color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.4);
-      font-family: inherit;
-      transition: transform .1s, filter .1s;
-      position: relative; overflow: hidden;
-    }
-    .answer-btn:active { transform: scale(0.94); }
-    @keyframes flash-correct { 0%{filter:brightness(1.6) saturate(1.2);} 100%{filter:brightness(1);} }
-    @keyframes flash-wrong { 0%{transform:scale(1) rotate(-5deg);filter:brightness(0.5);} 50%{transform:scale(1) rotate(5deg);} 100%{transform:scale(1);} }
-    .answer-btn.correct { animation: flash-correct 0.4s ease forwards; }
-    .answer-btn.wrong   { animation: flash-wrong 0.4s ease forwards; }
-
-    /* ── COMBO ── */
-    .combo-row {
-      width: 100%; display: flex; align-items: center; gap: 10px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--rad-sm); padding: 10px 16px;
-    }
-    .combo-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text3); }
-    .dots { display: flex; gap: 6px; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); transition: background .15s, transform .15s; }
-    .dot.on { background: #EAB308; border-color: #EAB308; transform: scale(1.2); }
-    .combo-bonus { font-size: 12px; font-weight: 700; color: #EAB308; margin-left: auto; }
-
-    /* ── SCORE POP ── */
-    .score-pop {
-      position: fixed; font-size: 22px; font-weight: 800;
-      pointer-events: none; z-index: 999;
-      animation: pop-float .75s ease forwards;
-    }
-    @keyframes pop-float { 0%{opacity:1;transform:translateY(0) scale(1);} 100%{opacity:0;transform:translateY(-60px) scale(1.4);} }
-
-    /* ── BUTTONS ── */
-    .btn-primary {
-      width: 100%; height: 52px; border-radius: var(--radius); border: none;
-      background: var(--accent); color: #fff; font-size: 16px; font-weight: 700;
-      font-family: inherit; cursor: pointer; transition: opacity .15s, transform .1s;
-    }
-    .btn-primary:active { opacity: .85; transform: scale(.98); }
-    .btn-ghost {
-      width: 100%; height: 44px; border-radius: var(--radius);
-      border: 1px solid var(--border2); background: transparent;
-      color: var(--text2); font-size: 14px; font-weight: 600;
-      font-family: inherit; cursor: pointer; transition: background .12s;
-    }
-    .btn-ghost:active { background: var(--surface2); }
-
-    /* ── RESULT ── */
-    .result-card {
-      width: 100%; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 28px 24px; text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 10px;
-    }
-    .result-icon { font-size: 56px; line-height: 1; margin-bottom: 4px; }
-    .result-title { font-size: 22px; font-weight: 700; }
-    .big-score { font-size: 56px; font-weight: 800; line-height: 1; color: var(--text); }
-    .new-best-label { font-size: 14px; font-weight: 700; color: #EAB308; }
-    .stat-row { display: flex; gap: 28px; margin-top: 6px; }
-    .stat-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-    .stat-n { font-size: 24px; font-weight: 700; color: var(--text); }
-    .stat-l { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text3); }
-
-    /* ── AD PLACEHOLDER ── */
-    .ad-banner {
-      width: 100%; max-width: 420px;
-      height: 60px; background: var(--surface);
-      border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    }
-    .ad-label { font-size: 11px; color: var(--text3); }
-
-    /* ── TUTORIAL OVERLAY ── */
-    .tutorial-overlay {
-      position: fixed; inset: 0; z-index: 100;
-      background: rgba(0,0,0,0.85);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 32px 24px; gap: 20px;
-      animation: fadeIn .3s ease;
-    }
-    @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-    .tut-card {
-      background: var(--surface2); border: 1px solid var(--border2);
-      border-radius: var(--radius); padding: 28px 24px;
-      max-width: 340px; width: 100%;
-      display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
-    }
-    .tut-step { display: flex; align-items: flex-start; gap: 12px; text-align: left; }
-    .tut-num { font-size: 18px; font-weight: 800; color: var(--accent); min-width: 24px; }
-    .tut-text { font-size: 14px; color: var(--text2); line-height: 1.5; }
-
-    /* ── SETTINGS ── */
-    .settings-row {
-      width: 100%; display: flex; align-items: center; justify-content: space-between;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--rad-sm); padding: 14px 16px;
-    }
-    .settings-label { font-size: 14px; color: var(--text); font-weight: 500; }
-    .toggle {
-      width: 44px; height: 26px; border-radius: 13px;
-      background: var(--surface2); border: 1px solid var(--border2);
-      cursor: pointer; position: relative; transition: background .2s;
-    }
-    .toggle.on { background: var(--accent); border-color: var(--accent); }
-    .toggle::after {
-      content: ''; position: absolute; top: 3px; left: 3px;
-      width: 18px; height: 18px; border-radius: 50%;
-      background: #fff; transition: left .2s;
-    }
-    .toggle.on::after { left: 21px; }
-
-    /* HAPTIC / SOUND icons */
-    .icon { font-size: 20px; margin-right: 8px; }
+    /* TOAST */
+    #gv-toast { bottom:24px; }
   </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- ═══ SPLASH SCREEN ═══ -->
-  <div id="screen-splash" class="screen">
-    <div class="logo-wrap">
-      <div class="logo-emoji">🎨</div>
-      <div class="logo-title">Tap Rush</div>
-      <div class="logo-sub">Tap the right color before time runs out. Speed increases every level!</div>
-    </div>
+<!-- ═══ AUTH SCREEN ═══ -->
+<div id="auth-screen">
+  <div class="auth-logo">🎮</div>
+  <div class="auth-brand">GameVerse</div>
+  <div class="auth-tagline">12 games · 1 account · infinite fun</div>
 
-    <div id="best-chip" class="best-chip hidden">🏆 Best: 0</div>
-
-    <div class="section-label">Choose Mode</div>
-    <div class="mode-grid">
-      <div class="mode-card" onclick="startGame('classic')" id="mc-classic">
-        <div class="mode-icon">⚡</div>
-        <div class="mode-name">Classic</div>
-        <div class="mode-desc">3 lives · endless</div>
-      </div>
-      <div class="mode-card" onclick="startGame('zen')" id="mc-zen">
-        <div class="mode-icon">🌊</div>
-        <div class="mode-name">Zen</div>
-        <div class="mode-desc">No penalty · chill</div>
-      </div>
-      <div class="mode-card" onclick="startGame('blitz')" id="mc-blitz">
-        <div class="mode-icon">🔥</div>
-        <div class="mode-name">Blitz</div>
-        <div class="mode-desc">30 sec · max speed</div>
-      </div>
-      <div class="mode-card" onclick="startGame('dark')" id="mc-dark">
-        <div class="mode-icon">🌑</div>
-        <div class="mode-name">Dark</div>
-        <div class="mode-desc">No labels · expert</div>
-      </div>
-    </div>
-
-    <div class="section-label">High Scores</div>
-    <div class="leaderboard-wrap" id="leaderboard"></div>
-
-    <div class="section-label" style="margin-top:4px;">Settings</div>
-    <div class="settings-row">
-      <div><span class="icon">🔊</span><span class="settings-label">Sound</span></div>
-      <div class="toggle on" id="toggle-sound" onclick="toggleSetting('sound')"></div>
-    </div>
-    <div class="settings-row">
-      <div><span class="icon">📳</span><span class="settings-label">Vibration</span></div>
-      <div class="toggle on" id="toggle-vib" onclick="toggleSetting('vib')"></div>
-    </div>
-
-    <button class="btn-ghost" onclick="showTutorial()">How to play</button>
-    <div style="height:70px;"></div>
+  <div class="auth-tabs" style="max-width:360px;">
+    <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+    <button class="auth-tab" onclick="switchTab('register')">Create Account</button>
   </div>
 
-  <!-- ═══ GAME SCREEN ═══ -->
-  <div id="screen-game" class="screen hidden" style="padding-top:32px; justify-content: flex-start;">
-    <div class="top-bar">
-      <div class="level-pill" id="level-display">Level 1</div>
-      <div class="lives-row" id="lives-display">❤️❤️❤️</div>
-      <div class="mode-pill" id="mode-tag">Classic</div>
+  <!-- LOGIN FORM -->
+  <div id="login-form" class="auth-form">
+    <div class="field">
+      <label>Username</label>
+      <input id="li-user" type="text" placeholder="Enter your username" autocomplete="username"/>
     </div>
-
-    <div class="hud">
-      <div class="hud-stat">
-        <div class="hud-label">Score</div>
-        <div class="hud-val" id="score-display">0</div>
-      </div>
-      <div class="hud-stat">
-        <div class="hud-label">Streak</div>
-        <div class="hud-val" id="streak-display">0</div>
-      </div>
-      <div class="hud-stat" id="blitz-wrap" style="display:none;">
-        <div class="hud-label">Time</div>
-        <div class="hud-val" id="blitz-time">30</div>
-      </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="li-pass" type="password" placeholder="Enter your password" autocomplete="current-password"/>
+      <div class="err hidden" id="li-err"></div>
     </div>
-
-    <div class="timer-wrap">
-      <div class="timer-fill" id="timer-fill" style="width:100%;"></div>
+    <div class="remember-row">
+      <input type="checkbox" id="li-remember" checked/>
+      <label for="li-remember">Keep me signed in</label>
     </div>
-
-    <div class="q-box">
-      <div class="q-label" id="q-label">Tap this color</div>
-      <div class="q-text" id="q-text"></div>
-      <div class="color-swatch hidden" id="q-swatch"></div>
-    </div>
-
-    <div class="answers-grid" id="answers-grid"></div>
-
-    <div class="combo-row">
-      <div class="combo-label">Combo</div>
-      <div class="dots" id="combo-dots">
-        <div class="dot" id="d0"></div>
-        <div class="dot" id="d1"></div>
-        <div class="dot" id="d2"></div>
-        <div class="dot" id="d3"></div>
-        <div class="dot" id="d4"></div>
-      </div>
-      <div class="combo-bonus" id="combo-bonus"></div>
-    </div>
-
-    <button class="btn-ghost" onclick="quitGame()" style="margin-top:auto;">Quit game</button>
-    <div style="height:70px;"></div>
+    <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+    <div class="auth-divider">or</div>
+    <button class="btn btn-ghost" onclick="switchTab('register')">Create a new account</button>
+    <button class="btn btn-ghost btn-sm" onclick="guestPlay()" style="width:100%;height:40px;font-size:13px;">Continue as guest</button>
   </div>
 
-  <!-- ═══ RESULT SCREEN ═══ -->
-  <div id="screen-result" class="screen hidden">
-    <div class="result-card">
-      <div class="result-icon" id="result-icon">🎉</div>
-      <div class="result-title" id="result-title">Round over!</div>
-      <div class="big-score" id="result-score">0</div>
-      <div class="new-best-label hidden" id="new-best-label">🏆 New best score!</div>
-      <div class="stat-row">
-        <div class="stat-item"><div class="stat-n" id="res-level">1</div><div class="stat-l">Level</div></div>
-        <div class="stat-item"><div class="stat-n" id="res-streak">0</div><div class="stat-l">Best streak</div></div>
-        <div class="stat-item"><div class="stat-n" id="res-correct">0</div><div class="stat-l">Correct</div></div>
-      </div>
+  <!-- REGISTER FORM -->
+  <div id="register-form" class="auth-form hidden">
+    <div class="field">
+      <label>Choose Avatar</label>
+      <div class="avatar-grid" id="avatar-grid"></div>
     </div>
-
-    <!-- Interstitial Ad placeholder -->
-    <div style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);height:100px;display:flex;align-items:center;justify-content:center;">
-      <!-- Replace with real AdMob: <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXX" data-ad-slot="XXX" data-ad-format="auto"></ins> -->
-      <span style="font-size:12px;color:var(--text3);">Ad space · AdMob interstitial here</span>
+    <div class="field">
+      <label>Username</label>
+      <input id="rg-user" type="text" placeholder="Pick a cool username" maxlength="20"/>
     </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="rg-pass" type="password" placeholder="Create a password (4+ chars)"/>
+    </div>
+    <div class="field">
+      <label>Confirm Password</label>
+      <input id="rg-pass2" type="password" placeholder="Repeat password"/>
+      <div class="err hidden" id="rg-err"></div>
+    </div>
+    <button class="btn btn-green" onclick="doRegister()">Create Account</button>
+    <div class="auth-divider">or</div>
+    <button class="btn btn-ghost" onclick="switchTab('login')">Already have an account</button>
+  </div>
+</div>
 
-    <button class="btn-primary" onclick="restartGame()">▶ Play again</button>
-    <button class="btn-ghost" onclick="showSplash()">Change mode</button>
-    <div style="height:70px;"></div>
+<!-- ═══ HOME SCREEN ═══ -->
+<div id="home-screen">
+
+  <!-- TOP NAV -->
+  <div class="top-nav">
+    <div class="nav-brand">🎮 GameVerse</div>
+    <div class="nav-right">
+      <div class="nav-coins" id="nav-coins">🪙 100</div>
+      <div class="nav-avatar" id="nav-avatar" onclick="showProfile()">😀</div>
+    </div>
   </div>
 
-  <!-- ═══ TUTORIAL OVERLAY ═══ -->
-  <div id="tutorial-overlay" class="tutorial-overlay hidden">
-    <div class="tut-card">
-      <div style="font-size:40px;">🎨</div>
-      <div style="font-size:18px;font-weight:700;">How to play</div>
-      <div class="tut-step">
-        <div class="tut-num">1</div>
-        <div class="tut-text">A color name or swatch appears. Tap the matching colored button.</div>
-      </div>
-      <div class="tut-step">
-        <div class="tut-num">2</div>
-        <div class="tut-text">Beat the timer bar. Each level gets faster — stay sharp!</div>
-      </div>
-      <div class="tut-step">
-        <div class="tut-num">3</div>
-        <div class="tut-text">Build combos (3×, 5×) for score multipliers. Wrong tap = lose a life.</div>
-      </div>
-      <div class="tut-step">
-        <div class="tut-num">4</div>
-        <div class="tut-text">Dark mode hides color names — only shapes visible. Hardest challenge!</div>
-      </div>
-    </div>
-    <button class="btn-primary" style="max-width:340px;" onclick="hideTutorial()">Got it, let's play!</button>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="greeting">Hey, <span id="hero-name">Player</span>! 👋</div>
+    <div class="hero-sub">Ready to play? Pick a game below.</div>
   </div>
 
-  <!-- ═══ AD BANNER (bottom) ═══ -->
-  <div class="ad-banner" id="ad-banner">
-    <!-- Replace with real AdMob banner:
-    <ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px"
-         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="XXXXXXXXXX"></ins>
-    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    -->
-    <span class="ad-label">Ad banner · 320×50 AdMob</span>
+  <!-- CONTINUE PLAYING -->
+  <div id="continue-section" style="display:none; margin-bottom:20px; margin-top:16px;">
+    <div class="section-title">Continue Playing</div>
+    <div class="continue-scroll" id="continue-scroll"></div>
   </div>
+
+  <!-- FILTER -->
+  <div style="margin:20px 0 12px;">
+    <div class="filter-tabs" id="filter-tabs"></div>
+  </div>
+
+  <!-- GAME GRID -->
+  <div class="game-grid" id="game-grid"></div>
 
 </div>
 
+<!-- PROFILE MODAL -->
+<div id="profile-modal" class="modal-overlay hidden" onclick="closeProfile(event)">
+  <div class="modal">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:48px;" id="pm-avatar">😀</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;" id="pm-username">Player</div>
+        <div style="font-size:12px;color:var(--text3);">Local Account · v1.0</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="profile-stat">
+      <span class="profile-stat-label">🪙 Coins</span>
+      <span class="profile-stat-val" id="pm-coins" style="color:var(--yellow)">100</span>
+    </div>
+    <div class="profile-stat">
+      <span class="profile-stat-label">🎮 Games saved</span>
+      <span class="profile-stat-val" id="pm-saves">0</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-sm);padding:12px;font-size:12px;color:var(--text3);line-height:1.6;">
+      🔒 Your account is stored locally on this device. Google Sign-In and cloud sync coming in the next update!
+    </div>
+    <button class="btn btn-ghost" onclick="doLogout()">Sign out</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%;height:36px;" onclick="closeProfile()">Close</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="gv-toast"></div>
+
+<script src="js/core.js"></script>
 <script>
-/* ══════════════════════════════════════
-   TAP RUSH — GAME ENGINE v1.0
-   Deepu Siva Private Limited
-   ══════════════════════════════════════ */
+const AVATARS = ['😀','😎','🤩','😈','👾','🤖','🦊','🐉','🦁','🐼','🐸','🎭','🧙','👻','🎃','🤠'];
+let selectedAvatar = '😀';
+let activeFilter = 'All';
 
-const COLORS = [
-  { name: 'Red',     hex: '#EF4444' },
-  { name: 'Blue',    hex: '#3B82F6' },
-  { name: 'Green',   hex: '#22C55E' },
-  { name: 'Yellow',  hex: '#EAB308' },
-  { name: 'Purple',  hex: '#A855F7' },
-  { name: 'Orange',  hex: '#F97316' },
-  { name: 'Pink',    hex: '#EC4899' },
-  { name: 'Teal',    hex: '#14B8A6' },
-  { name: 'Cyan',    hex: '#06B6D4' },
-  { name: 'Lime',    hex: '#84CC16' },
-];
-
-/* Audio context for sound effects */
-let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-function playTone(freq, type, duration, vol=0.3) {
-  if (!settings.sound) return;
-  try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = freq; osc.type = type;
-    gain.gain.setValueAtTime(vol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.start(); osc.stop(ctx.currentTime + duration);
-  } catch(e) {}
-}
-function playCorrect() { playTone(880, 'sine', 0.15, 0.25); setTimeout(()=>playTone(1320,'sine',0.15,0.2),80); }
-function playWrong()   { playTone(220, 'sawtooth', 0.3, 0.2); }
-function playLevelUp() { [523,659,784,1047].forEach((f,i) => setTimeout(()=>playTone(f,'sine',0.25,0.3),i*80)); }
-function vibrate(ms)   { if (settings.vib && navigator.vibrate) navigator.vibrate(ms); }
-
-/* ── STATE ── */
-let score=0, lives=3, level=1, streak=0, bestStreak=0, correct=0;
-let timerPct=100, timerInterval=null, blitzInterval=null;
-let blitzLeft=30, answerLocked=false, roundTime=3000;
-let currentMode='classic', lastMode='classic';
-let settings = { sound: true, vib: true };
-
-/* Persistent scores via localStorage */
-let bestScores = { classic:0, zen:0, blitz:0, dark:0 };
-function loadScores() {
-  try { let d=JSON.parse(localStorage.getItem('tapRushScores')||'{}'); Object.assign(bestScores,d); } catch(e){}
-  try { let s=JSON.parse(localStorage.getItem('tapRushSettings')||'{}'); Object.assign(settings,s); } catch(e){}
-}
-function saveScores() {
-  try { localStorage.setItem('tapRushScores', JSON.stringify(bestScores)); } catch(e){}
-}
-function saveSettings() {
-  try { localStorage.setItem('tapRushSettings', JSON.stringify(settings)); } catch(e){}
+/* ── TOAST ── */
+function toast(msg, dur=2500) {
+  let t=document.getElementById('gv-toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
 }
 
-function $(id) { return document.getElementById(id); }
-function shuffle(a) { let arr=[...a]; for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr; }
-function pick(arr,n) { return shuffle(arr).slice(0,n); }
-function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
-
-/* ── SCREENS ── */
-function showSplash() {
-  $('screen-splash').classList.remove('hidden');
-  $('screen-game').classList.add('hidden');
-  $('screen-result').classList.add('hidden');
-  renderLeaderboard();
-  let best = Math.max(...Object.values(bestScores));
-  if (best > 0) { $('best-chip').textContent = '🏆 Best: '+best; $('best-chip').classList.remove('hidden'); } else { $('best-chip').classList.add('hidden'); }
-  updateSettingsUI();
+/* ── AUTH TABS ── */
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('login-form').classList.toggle('hidden', tab!=='login');
+  document.getElementById('register-form').classList.toggle('hidden', tab!=='register');
 }
 
-function renderLeaderboard() {
-  let lb = $('leaderboard');
-  let entries = Object.entries(bestScores).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  let modeEmoji = { classic:'⚡', zen:'🌊', blitz:'🔥', dark:'🌑' };
-  if (entries.length===0) { lb.innerHTML='<div class="lb-empty">No scores yet — play your first game!</div>'; return; }
-  lb.innerHTML = entries.map(([mode,score],i)=>
-    `<div class="lb-row">
-      <div class="lb-rank">#${i+1}</div>
-      <div class="lb-mode">${modeEmoji[mode]||''} ${mode.charAt(0).toUpperCase()+mode.slice(1)}</div>
-      <div class="lb-score">${score.toLocaleString()}</div>
-    </div>`
-  ).join('');
+/* ── AVATAR GRID ── */
+function buildAvatarGrid() {
+  let grid=document.getElementById('avatar-grid');
+  grid.innerHTML=AVATARS.map(a=>`<div class="avatar-opt${a===selectedAvatar?' selected':''}" onclick="selectAvatar('${a}')">${a}</div>`).join('');
 }
 
-function showTutorial() { $('tutorial-overlay').classList.remove('hidden'); }
-function hideTutorial() { $('tutorial-overlay').classList.add('hidden'); }
-
-function toggleSetting(key) {
-  settings[key] = !settings[key];
-  saveSettings();
-  updateSettingsUI();
-}
-function updateSettingsUI() {
-  $('toggle-sound').className = 'toggle' + (settings.sound ? ' on' : '');
-  $('toggle-vib').className = 'toggle' + (settings.vib ? ' on' : '');
+function selectAvatar(a) {
+  selectedAvatar=a;
+  document.querySelectorAll('.avatar-opt').forEach(el=>el.classList.toggle('selected',el.textContent===a));
 }
 
-/* ── GAME START ── */
-function startGame(mode) {
-  currentMode = mode; lastMode = mode;
-  score=0; lives=3; level=1; streak=0; bestStreak=0; correct=0;
-  blitzLeft=30; answerLocked=false;
-  roundTime = mode==='blitz' ? 1800 : 3000;
-  $('screen-splash').classList.add('hidden');
-  $('screen-result').classList.add('hidden');
-  $('screen-game').classList.remove('hidden');
-  $('mode-tag').textContent = mode.charAt(0).toUpperCase()+mode.slice(1);
-  $('blitz-wrap').style.display = mode==='blitz' ? '' : 'none';
-  if (mode==='blitz') startBlitzTimer();
-  updateHUD();
-  nextQuestion();
+/* ── LOGIN ── */
+function doLogin() {
+  let u=document.getElementById('li-user').value.trim();
+  let p=document.getElementById('li-pass').value;
+  let r=document.getElementById('li-remember').checked;
+  let res=GV.Auth.login(u,p,r);
+  if (!res.ok) { let e=document.getElementById('li-err'); e.textContent=res.msg; e.classList.remove('hidden'); return; }
+  showHome(res.user);
 }
 
-function startBlitzTimer() {
-  if (blitzInterval) clearInterval(blitzInterval);
-  blitzInterval = setInterval(()=>{
-    blitzLeft--;
-    $('blitz-time').textContent = blitzLeft;
-    if (blitzLeft<=0) { clearInterval(blitzInterval); endGame('timeout'); }
-  }, 1000);
+function doRegister() {
+  let u=document.getElementById('rg-user').value.trim();
+  let p=document.getElementById('rg-pass').value;
+  let p2=document.getElementById('rg-pass2').value;
+  let err=document.getElementById('rg-err');
+  if (p!==p2) { err.textContent='Passwords do not match'; err.classList.remove('hidden'); return; }
+  let res=GV.Auth.register(u,p,selectedAvatar);
+  if (!res.ok) { err.textContent=res.msg; err.classList.remove('hidden'); return; }
+  GV.Auth.login(u,p,true);
+  toast('Account created! Welcome, '+u+'!');
+  showHome(res.user);
 }
 
-/* ── QUESTION ── */
-function nextQuestion() {
-  if (answerLocked) return;
-  clearInterval(timerInterval);
-
-  let numColors = Math.min(6, 2 + Math.floor(level/2));
-  let pool = pick(COLORS, numColors);
-  let target = rand(pool);
-  let isDark = currentMode==='dark';
-  let showSwatch = isDark || Math.random()<0.4;
-
-  let ql=$('q-label'), qt=$('q-text'), sw=$('q-swatch');
-
-  if (showSwatch) {
-    ql.textContent = isDark ? 'Tap the matching color' : 'Tap this color';
-    qt.textContent = '';
-    sw.classList.remove('hidden'); sw.style.background = target.hex;
-  } else {
-    ql.textContent = 'Tap the correct color';
-    qt.textContent = target.name;
-    sw.classList.add('hidden');
-  }
-
-  let grid = $('answers-grid');
-  grid.innerHTML = '';
-  shuffle(pool).forEach(c=>{
-    let btn = document.createElement('button');
-    btn.className='answer-btn';
-    btn.style.background = c.hex;
-    if (!isDark) btn.textContent = c.name;
-    btn.addEventListener('click', ()=>handleAnswer(c, target, btn), {once:true});
-    grid.appendChild(btn);
-  });
-
-  timerPct=100;
-  let elapsed=0;
-  timerInterval = setInterval(()=>{
-    elapsed+=80;
-    timerPct = Math.max(0, 100-(elapsed/roundTime)*100);
-    let fill=$('timer-fill');
-    fill.style.width = timerPct+'%';
-    fill.style.background = timerPct>50?'#3B82F6':timerPct>25?'#F59E0B':'#EF4444';
-    if (timerPct<=0) { clearInterval(timerInterval); handleTimeout(); }
-  }, 80);
+function guestPlay() {
+  let guest={ id:'guest', username:'Guest', avatar:'👾', coins:0 };
+  sessionStorage.setItem('gv_session', JSON.stringify(guest));
+  showHome(guest);
 }
 
-/* ── ANSWER LOGIC ── */
-function handleAnswer(chosen, target, btn) {
-  if (answerLocked) return;
-  answerLocked=true;
-  clearInterval(timerInterval);
-  $('timer-fill').style.width='0%';
+function doLogout() { GV.Auth.logout(); location.reload(); }
 
-  if (chosen.name===target.name) {
-    streak++; correct++;
-    bestStreak=Math.max(bestStreak,streak);
-    let mult = streak>=5?3:streak>=3?2:1;
-    let pts = 10*mult*Math.ceil(level/2);
-    score+=pts;
-    playCorrect(); vibrate(30);
-    showScorePop('+'+pts, btn, '#22C55E');
-    btn.classList.add('correct');
-
-    let prevLevel=level;
-    if (streak>0&&streak%5===0) { level++; updateRoundTime(); if(level>prevLevel) playLevelUp(); }
-    updateHUD();
-    setTimeout(()=>{ btn.classList.remove('correct'); answerLocked=false; nextQuestion(); }, 350);
-  } else {
-    streak=0;
-    playWrong(); vibrate([50,30,50]);
-    btn.classList.add('wrong');
-    if (currentMode!=='zen') {
-      lives=Math.max(0,lives-1);
-      if (lives===0) { setTimeout(()=>endGame('gameover'),420); return; }
-    }
-    updateHUD();
-    setTimeout(()=>{ btn.classList.remove('wrong'); answerLocked=false; nextQuestion(); }, 420);
-  }
+/* ── HOME ── */
+function showHome(user) {
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('home-screen').style.display='block';
+  document.getElementById('hero-name').textContent = user.username;
+  document.getElementById('nav-avatar').textContent = user.avatar||'😀';
+  document.getElementById('nav-coins').innerHTML = '🪙 '+(user.coins||0);
+  buildFilterTabs();
+  buildGameGrid();
+  buildContinueSection();
 }
 
-function handleTimeout() {
-  if (answerLocked) return;
-  answerLocked=true;
-  streak=0;
-  playWrong(); vibrate(80);
-  if (currentMode!=='zen') {
-    lives=Math.max(0,lives-1);
-    if (lives===0) { endGame('gameover'); return; }
-  }
-  updateHUD();
-  setTimeout(()=>{ answerLocked=false; nextQuestion(); }, 300);
+/* ── FILTERS ── */
+function buildFilterTabs() {
+  let genres=['All',...new Set(GV.GAMES.map(g=>g.genre))];
+  let tabs=document.getElementById('filter-tabs');
+  tabs.innerHTML=genres.map(g=>`<button class="filter-tab${g==='All'?' active':''}" onclick="setFilter('${g}')">${g}</button>`).join('');
 }
 
-function updateRoundTime() {
-  let base = currentMode==='blitz'?1600:3000;
-  roundTime = Math.max(700, base-(level-1)*100);
+function setFilter(g) {
+  activeFilter=g;
+  document.querySelectorAll('.filter-tab').forEach(el=>el.classList.toggle('active',el.textContent===g));
+  buildGameGrid();
 }
 
-/* ── HUD UPDATE ── */
-function updateHUD() {
-  $('score-display').textContent = score.toLocaleString();
-  $('streak-display').textContent = streak;
-  $('level-display').textContent = 'Level '+level;
-  if (currentMode==='zen') { $('lives-display').textContent='∞'; }
-  else { $('lives-display').textContent='❤️'.repeat(lives)+'🖤'.repeat(Math.max(0,3-lives)); }
-  for(let i=0;i<5;i++){let d=$('d'+i);if(d)d.className='dot'+(streak>i?' on':'');}
-  $('combo-bonus').textContent = streak>=5?'×3 pts!':streak>=3?'×2 pts!':'';
+/* ── GAME GRID ── */
+function buildGameGrid() {
+  let saves=GV.Save.getAllForUser();
+  let games=GV.GAMES.filter(g=>activeFilter==='All'||g.genre===activeFilter);
+  let grid=document.getElementById('game-grid');
+  grid.innerHTML=games.map(g=>{
+    let save=saves[g.id];
+    let savedBadge=save?`<span class="gc-saved chip chip-green" style="font-size:9px;padding:2px 6px;">SAVED</span>`:'';
+    let genreColor=genreChipColor(g.genre);
+    return `<div class="game-card" onclick="launchGame('${g.file}','${g.id}','${g.title}')" style="border-top:3px solid ${g.color}20;">
+      <div class="gc-top">
+        <div class="gc-icon">${g.icon}</div>
+        ${savedBadge}
+      </div>
+      <div class="gc-title">${g.title}</div>
+      <div class="gc-desc">${g.desc}</div>
+      <div class="gc-genre chip" style="background:${g.color}20;color:${g.color};border:1px solid ${g.color}30;">${g.genre}</div>
+    </div>`;
+  }).join('');
 }
 
-function showScorePop(text, btn, color) {
-  let pop=document.createElement('div');
-  pop.className='score-pop'; pop.textContent=text; pop.style.color=color;
-  let r=btn.getBoundingClientRect();
-  pop.style.left=(r.left+r.width/2-20)+'px';
-  pop.style.top=(r.top-10)+'px';
-  document.body.appendChild(pop);
-  setTimeout(()=>pop.remove(),800);
+function genreChipColor(genre) {
+  let map={Casual:'chip-blue',Action:'chip-red',Puzzle:'chip-purple',Strategy:'chip-green',Physics:'chip-yellow',Memory:'chip-blue',Classic:'chip-green',Word:'chip-purple',Skill:'chip-blue'};
+  return map[genre]||'chip-blue';
 }
 
-/* ── END ── */
-function quitGame() { clearInterval(timerInterval); clearInterval(blitzInterval); endGame('quit'); }
-function restartGame() { startGame(lastMode); }
+/* ── CONTINUE SECTION ── */
+function buildContinueSection() {
+  let saves=GV.Save.getAllForUser();
+  let entries=Object.entries(saves);
+  if (entries.length===0) return;
+  document.getElementById('continue-section').style.display='block';
+  let scroll=document.getElementById('continue-scroll');
+  scroll.innerHTML=entries.map(([gid,save])=>{
+    let game=GV.GAMES.find(g=>g.id===gid);
+    if (!game) return '';
+    let pct=Math.min(100, Math.round(((save.level||1)/20)*100));
+    return `<div class="continue-card" onclick="launchGame('${game.file}','${game.id}','${game.title}')">
+      <div class="cc-icon">${game.icon}</div>
+      <div class="cc-title">${game.title}</div>
+      <div class="cc-meta">Level ${save.level||1} · ${GV.Utils.timeAgo(save.savedAt)}</div>
+      <div class="cc-progress"><div class="cc-progress-fill" style="width:${pct}%;background:${game.color};"></div></div>
+    </div>`;
+  }).join('');
+}
 
-function endGame(reason) {
-  clearInterval(timerInterval); clearInterval(blitzInterval);
-  answerLocked=true;
-  let isNewBest = score>bestScores[currentMode]&&score>0;
-  if (isNewBest) { bestScores[currentMode]=score; saveScores(); }
-  $('screen-game').classList.add('hidden');
-  $('screen-result').classList.remove('hidden');
-  let icons={ quit:'🏁', gameover:'💀', timeout:'⏱️' };
-  let titles={ quit:'You quit', gameover:'Game over!', timeout:"Time's up!" };
-  $('result-icon').textContent = icons[reason]||'🎉';
-  $('result-title').textContent = titles[reason]||'Round over';
-  $('result-score').textContent = score.toLocaleString();
-  $('res-level').textContent = level;
-  $('res-streak').textContent = bestStreak;
-  $('res-correct').textContent = correct;
-  $('new-best-label').classList.toggle('hidden', !isNewBest);
+/* ── LAUNCH ── */
+function launchGame(file, id, title) {
+  let user=GV.Auth.current();
+  if (!user) { toast('Please sign in to play!'); return; }
+  sessionStorage.setItem('gv_active_game', id);
+  window.location.href=file;
+}
+
+/* ── PROFILE ── */
+function showProfile() {
+  let user=GV.Auth.current();
+  if (!user) return;
+  document.getElementById('pm-avatar').textContent=user.avatar||'😀';
+  document.getElementById('pm-username').textContent=user.username;
+  document.getElementById('pm-coins').textContent=user.coins||0;
+  document.getElementById('pm-saves').textContent=Object.keys(GV.Save.getAllForUser()).length;
+  document.getElementById('profile-modal').classList.remove('hidden');
+}
+function closeProfile(e) {
+  if (!e||e.target.id==='profile-modal') document.getElementById('profile-modal').classList.add('hidden');
 }
 
 /* ── INIT ── */
-loadScores();
-showSplash();
+buildAvatarGrid();
+let existing=GV.Auth.current();
+if (existing) showHome(existing);
 </script>
 </body>
 </html>

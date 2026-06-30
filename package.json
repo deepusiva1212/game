@@ -1,15 +1,14 @@
 {
-  "name": "tap-rush",
+  "name": "gameverse",
   "version": "1.0.0",
-  "description": "Tap Rush — Reflex Color Game by Deepu Siva Private Limited",
+  "description": "GameVerse — 12 games in one app, by Deepu Siva Private Limited",
   "main": "index.html",
   "scripts": {
     "start": "npx serve . -p 3000",
     "android:init": "npx cap add android",
     "android:sync": "npx cap sync android",
     "android:open": "npx cap open android",
-    "android:build": "npx cap sync android && cd android && ./gradlew assembleRelease",
-    "android:debug": "npx cap run android"
+    "android:build": "npx cap sync android && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^5.0.0",

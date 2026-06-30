@@ -1,191 +1,186 @@
-# 🎨 Tap Rush — Reflex Color Game
+# 🎮 GameVerse — 12 Games, 1 App
 
-> A fast-paced reflex game where you tap the correct color before time runs out. Developed by **Deepu Siva Private Limited**.
-
-[![Play Now](https://img.shields.io/badge/Play%20Now-Live%20Demo-3B82F6?style=for-the-badge)](https://YOUR_USERNAME.github.io/tap-rush/)
-[![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)]()
+> Multi-game hub by **Deepu Siva Private Limited**. Local accounts, per-game save states, modular architecture — each game is a single isolated file.
 
 ---
 
-## 🎮 Game Features
+## 🗂️ Architecture (READ THIS FIRST)
 
-| Feature | Details |
-|---|---|
-| **4 Game Modes** | Classic, Zen, Blitz, Dark |
-| **8 Colors** | Increases to 10 as levels go up |
-| **Combo System** | ×2 at 3 streak, ×3 at 5 streak |
-| **Sound Effects** | Web Audio API tones |
-| **Haptic Feedback** | Vibration API on Android |
-| **High Score Board** | Persistent via localStorage |
-| **AdMob Ready** | Banner + interstitial placeholders |
-| **Play Store Ready** | Capacitor.js APK wrapper |
+**Every game lives in its own file under `/games/`.** If one game breaks, fix or replace that single file — nothing else is affected.
+
+```
+GameVerse/
+├── index.html              ← Hub: auth, profile, game grid, "continue playing"
+├── privacy-policy.html     ← Required for Play Store
+├── capacitor.config.json   ← Android wrapper config
+├── package.json
+├── css/
+│   └── global.css          ← Shared dark theme styles
+├── js/
+│   └── core.js             ← Auth + Save engine (GV object) — used by ALL games
+└── games/
+    ├── tap-rush.html        🎨 Reflex color tapping
+    ├── runner.html           🏃 Endless runner (Subway Surfers style)
+    ├── candy-match.html      🍬 Match-3 puzzle (Candy Crush style)
+    ├── coin-kingdom.html     🪙 Spin wheel + village builder (Coin Master style)
+    ├── brain-blocks.html     🧩 Sliding number puzzle
+    ├── happy-farm.html       🌾 Plant/grow/harvest farming sim
+    ├── sling-shot.html       🐦 Physics launcher (Angry Birds style)
+    ├── card-flip.html        🃏 Memory matching
+    ├── snake.html            🐍 Classic snake
+    ├── word-quest.html       📝 Word search puzzle
+    ├── tower-stack.html      🏗️ Block stacking skill game
+    └── bubble-pop.html       🫧 Bubble shooter match
+```
+
+**To add a 13th game:** create `games/your-game.html`, copy the save/exit pattern from any existing game, then add one line to the `GV.GAMES` array in `js/core.js`. The hub automatically picks it up — no other changes needed.
 
 ---
 
-## 🚀 Live Demo (GitHub Pages)
+## 🔐 How Accounts Work
 
-1. Go to your repo → **Settings → Pages**
-2. Set source: `main` branch, `/ (root)` folder
-3. Your game is live at: `https://YOUR_USERNAME.github.io/tap-rush/`
+- **Local-only accounts** — stored in the browser's `localStorage`, no server, no internet required.
+- Users tap **Create Account** → choose avatar, username, password → account is saved on-device.
+- **Returning users** tap **Sign In** — if "Keep me signed in" was checked, they skip login on next launch entirely.
+- **Guest mode** available — plays without saving progress permanently (session-only).
+- 🔜 **Next update**: Google Sign-In / cloud sync, so progress follows the user across devices. The architecture already separates `GV.Auth` from `GV.Save`, so this is a drop-in upgrade — only `core.js` will need changes, no game files.
+
+---
+
+## 💾 How Save States Work (Resume Exactly Where You Left Off)
+
+Every game calls two functions from `core.js`:
+
+```js
+GV.Save.set('gameId', { score, level, ...anyData });  // called after every meaningful action
+GV.Save.get('gameId');                                  // called on game load to resume
+```
+
+Save data is keyed by **user ID + game ID**, so:
+- Each user has independent progress per game.
+- Closing the app, leaving for hours/days, and reopening resumes the exact level, score, board state, or kingdom — whatever that specific game saved.
+- The home screen's **"Continue Playing"** row reads all saves and shows quick-resume cards automatically.
+
+### Example: adding save/resume to a new game
+```js
+// On load:
+let save = GV.Save.get('myGame');
+if (save) { level = save.level; score = save.score; }
+
+// After level complete / important event:
+GV.Save.set('myGame', { level, score, savedAt: new Date().toISOString() });
+```
+
+---
+
+## 🚀 Host on GitHub Pages
+
+1. Push all files to your repo (you've already done this ✅)
+2. **Settings → Pages → Source: main / root**
+3. Live at: `https://YOUR_USERNAME.github.io/REPO_NAME/`
+4. Test the full account flow: register → play a game → leave → come back → confirm it resumes.
 
 ---
 
 ## 📱 Build Android APK (Capacitor)
 
-### Prerequisites
-- Node.js 18+
-- Android Studio (with Android SDK)
-- Java 17+
-
-### Steps
-
 ```bash
-# 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/tap-rush.git
-cd tap-rush
-
-# 2. Install dependencies
 npm install
-
-# 3. Add Android platform
 npm run android:init
-
-# 4. Sync web files into Android
 npm run android:sync
-
-# 5. Open in Android Studio
 npm run android:open
-# Then: Build → Generate Signed Bundle/APK → APK
+# In Android Studio: Build → Generate Signed Bundle/APK
 ```
 
-### Release APK for Play Store
+### Release build
 ```bash
-# Generate keystore (do this once, KEEP IT SAFE!)
-keytool -genkey -v -keystore android/tapRush.keystore \
-  -alias tapRush -keyalg RSA -keysize 2048 -validity 10000
-
-# Build release APK
+keytool -genkey -v -keystore android/gameverse.keystore -alias gameverse -keyalg RSA -keysize 2048 -validity 10000
 cd android && ./gradlew bundleRelease
 # Output: android/app/build/outputs/bundle/release/app-release.aab
 ```
 
 ---
 
-## 💰 AdMob Integration
+## 💰 AdMob Setup
 
-### Step 1 — Create AdMob Account
-1. Go to [admob.google.com](https://admob.google.com)
-2. Create app → "Tap Rush" → Android
-3. Note your **App ID** and **Ad Unit IDs**
+Each game file has space reserved for banner/interstitial ads (see comments in HTML). Steps:
 
-### Step 2 — Replace Placeholders in `index.html`
-
-Find these comments and replace:
-
-```html
-<!-- Banner ad (bottom of screen) -->
-<ins class="adsbygoogle"
-     style="display:inline-block;width:320px;height:50px"
-     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-     data-ad-slot="XXXXXXXXXX"></ins>
-<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-
-<!-- Interstitial ad (after game over) -->
-<!-- Trigger in JS: adBreak({type: 'reward', ...}) -->
-```
-
-### Step 3 — Add AdMob to Android
-```bash
-npm install @capacitor-community/admob
-npx cap sync android
-```
-
-Then in `android/app/src/main/AndroidManifest.xml` add:
+1. Create app at [admob.google.com](https://admob.google.com) → Android
+2. Get App ID + per-game-or-shared Ad Unit IDs
+3. Add to `AndroidManifest.xml`:
 ```xml
-<meta-data
-  android:name="com.google.android.gms.ads.APPLICATION_ID"
+<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
   android:value="ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX"/>
 ```
+4. Install plugin: `npm install @capacitor-community/admob && npx cap sync android`
+
+**Recommended placement**: interstitial after every "Game Over" / "Level Complete" screen (already has placeholder divs), rewarded ad for "extra life" or "double coins" prompts.
 
 ---
 
 ## 🏪 Google Play Store Submission
 
-### Required Assets
-| Asset | Size | Notes |
-|---|---|---|
-| App icon | 512×512 PNG | No alpha |
-| Feature graphic | 1024×500 PNG | Store banner |
-| Screenshots | Min 2, phone | 16:9 or 9:16 |
-| Short description | Max 80 chars | |
-| Full description | Max 4000 chars | |
-| Privacy Policy URL | — | Use `/privacy-policy.html` hosted on GitHub Pages |
-| Content rating | — | Fill IARC questionnaire |
+| Asset | Spec |
+|---|---|
+| Icon | 512×512 PNG |
+| Feature graphic | 1024×500 PNG |
+| Screenshots | 2+ phone screenshots per orientation |
+| Privacy Policy URL | `https://YOUR_USERNAME.github.io/REPO/privacy-policy.html` |
+| Category | Games → Casual |
+| Content rating | Fill IARC questionnaire (all ages — no violence/gambling real money) |
 
-### Play Console Steps
-1. Go to [play.google.com/console](https://play.google.com/console) — pay **$25 one-time** fee
-2. Create app → Android → Free → Casual game
-3. Upload your `.aab` file (App Bundle, preferred over APK)
-4. Fill store listing: title, description, screenshots
-5. Set Privacy Policy URL: `https://YOUR_USERNAME.github.io/tap-rush/privacy-policy.html`
-6. Complete content rating questionnaire
-7. Set pricing to **Free** + Ads
-8. Submit for review (usually 1–3 days)
-
-### Recommended Play Store Description
+### Suggested Store Listing
 ```
-🎨 TAP RUSH — Reflex Color Game
+🎮 GAMEVERSE — 12 Games in One App!
 
-How fast are you? A color appears — tap the right one before the timer runs out!
+Why download 12 apps when you can have them all in one place?
 
-⚡ CLASSIC — 3 lives, infinite rounds. Speed increases every 5 correct!
-🌊 ZEN — No lives lost. Pure relaxation and score chasing.
-🔥 BLITZ — 30 seconds. Everything moves at max speed.
-🌑 DARK — No color names shown. Expert only!
+🎨 Tap Rush — lightning-fast color reflex challenge
+🏃 Sky Runner — endless runner with jumps & obstacles
+🍬 Candy Match — sweet match-3 puzzle action
+🪙 Coin Kingdom — spin, win, and build your village
+🧩 Brain Blocks — classic sliding number puzzle
+🌾 Happy Farm — plant, grow, and harvest crops
+🐦 Sling Shot — launch birds at targets, physics-based fun
+🃏 Card Flip — test your memory
+🐍 Snake Legends — the classic reborn
+📝 Word Quest — find hidden words
+🏗️ Tower Stack — stack blocks as high as you can
+🫧 Bubble Pop — match and pop colorful bubbles
 
-★ FEATURES
-• 8+ vibrant colors across 10+ difficulty levels
-• Combo multiplier system (×2 streak, ×3 streak)
-• Sound effects and haptic feedback
-• Persistent high scores per mode
-• Minimalist dark UI — easy on the eyes
-
-Perfect for 30-second breaks. Can you beat your own best?
+✅ ONE local account for all games
+✅ Resume exactly where you left off — anytime
+✅ No internet required to play
+✅ New games added in future updates
 
 Developed by Deepu Siva Private Limited 🇮🇳
 ```
 
 ---
 
-## 📁 Project Structure
+## 🛠️ Troubleshooting / Maintenance
 
-```
-tap-rush/
-├── index.html           ← Main game (entire game in one file)
-├── privacy-policy.html  ← Required for Play Store
-├── capacitor.config.json← Android APK config
-├── package.json         ← Dependencies + build scripts
-└── README.md            ← This file
-```
+| Problem | Fix |
+|---|---|
+| One game crashes | Open only that file in `/games/`, fix or replace it — zero impact on others |
+| Hub doesn't show a game | Check it's listed correctly in `GV.GAMES` array, `js/core.js` |
+| Save not resuming | Confirm the game calls `GV.Save.set()` after every important action, and `GV.Save.get()` on load |
+| Want to remove a game | Delete its entry from `GV.GAMES` in `core.js` — file can stay on disk unused |
+| Want to reorder games on home screen | Reorder entries in the `GV.GAMES` array |
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Firebase Analytics integration
-- [ ] Global leaderboard (Firebase Realtime DB)
-- [ ] Daily challenge mode
-- [ ] Color-blind accessibility mode
-- [ ] iOS App Store build
+- [ ] Google Sign-In + Firebase cloud sync (cross-device progress)
+- [ ] Global leaderboards per game
+- [ ] Daily login rewards / streaks
+- [ ] Push notifications ("come back and claim your spin!")
+- [ ] More games: Tic-Tac-Toe, 2048, Trivia Quiz, Racing
 
 ---
 
 ## 📞 Contact
 
 **Deepu Siva Private Limited**
-- Website: [deepusiva.com](https://deepusiva.com)
-- Phone: +91 8098889088
-
----
-
-*Built with HTML5 + Vanilla JS + Capacitor.js*
+Website: [deepusiva.com](https://deepusiva.com) · Phone: +91 8098889088
