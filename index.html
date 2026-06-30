@@ -3,126 +3,197 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-  <meta name="theme-color" content="#0a0a0a"/>
+  <meta name="theme-color" content="#0a0a14"/>
   <title>GameVerse — Play All Games</title>
   <link rel="stylesheet" href="css/global.css"/>
   <style>
     body { padding-bottom:20px; }
 
-    /* ── AUTH SCREEN ── */
+    /* ═══ AUTH SCREEN ═══ */
     #auth-screen {
       min-height:100vh; display:flex; flex-direction:column;
-      align-items:center; justify-content:center; padding:40px 24px;
-      gap:0;
+      align-items:center; justify-content:center; padding:48px 24px;
     }
-    .auth-logo { font-size:56px; margin-bottom:12px; }
-    .auth-brand { font-size:28px; font-weight:800; letter-spacing:-0.5px; margin-bottom:4px; }
-    .auth-tagline { font-size:14px; color:var(--text2); margin-bottom:32px; }
-    .auth-tabs { display:flex; width:100%; max-width:360px; background:var(--surface); border-radius:var(--radius); padding:4px; gap:4px; margin-bottom:24px; }
-    .auth-tab { flex:1; height:36px; border:none; border-radius:var(--rad-sm); font-size:14px; font-weight:600; background:transparent; color:var(--text2); cursor:pointer; transition:background .15s, color .15s; }
-    .auth-tab.active { background:var(--accent); color:#fff; }
+    .auth-logo-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:36px; }
+    .logo-orb {
+      width:84px; height:84px; border-radius:26px;
+      background: var(--grad-primary);
+      display:flex; align-items:center; justify-content:center;
+      font-size:42px; box-shadow: 0 12px 40px rgba(139,92,246,0.45);
+      animation: floatY 4s ease-in-out infinite;
+      position: relative;
+    }
+    .logo-orb::after {
+      content:''; position:absolute; inset:-12px; border-radius:32px;
+      background: var(--grad-primary); opacity:0.25; filter:blur(20px); z-index:-1;
+    }
+    .auth-brand {
+      font-family: var(--font-display); font-size:32px; font-weight:800; letter-spacing:-0.02em;
+      background: var(--grad-primary); -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .auth-tagline { font-size:14px; color:var(--text2); font-weight:500; }
+
+    .auth-tabs { display:flex; width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:5px; gap:4px; margin-bottom:26px; backdrop-filter: blur(20px); }
+    .auth-tab { flex:1; height:42px; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:var(--font-display); background:transparent; color:var(--text2); cursor:pointer; transition:all .2s; }
+    .auth-tab.active { background: var(--grad-primary); color:#fff; box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
     .auth-form { width:100%; max-width:360px; display:flex; flex-direction:column; gap:14px; }
-    .auth-divider { display:flex; align-items:center; gap:12px; color:var(--text3); font-size:12px; }
+    .auth-divider { display:flex; align-items:center; gap:12px; color:var(--text3); font-size:12px; font-weight:600; margin: 2px 0; }
     .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
     .remember-row { display:flex; align-items:center; gap:10px; }
-    .remember-row input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
-    .remember-row label { font-size:13px; color:var(--text2); cursor:pointer; }
+    .remember-row input { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
+    .remember-row label { font-size:13px; color:var(--text2); cursor:pointer; font-weight:500; }
 
-    /* ── HOME ── */
-    #home-screen { display:none; padding-bottom:30px; }
+    /* ═══ HOME ═══ */
+    #home-screen { display:none; padding-bottom:36px; }
 
-    /* TOP NAV */
     .top-nav {
       display:flex; align-items:center; justify-content:space-between;
-      padding:16px 16px 12px; position:sticky; top:0;
-      background:var(--bg); z-index:50; border-bottom:1px solid var(--border);
+      padding:16px 18px 14px; position:sticky; top:0;
+      background: rgba(10,10,20,0.75); backdrop-filter: blur(24px);
+      z-index:50; border-bottom:1px solid var(--border);
     }
-    .nav-brand { font-size:20px; font-weight:800; letter-spacing:-0.3px; }
+    .nav-brand { display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-size:19px; font-weight:800; letter-spacing:-0.01em; }
+    .nav-brand-icon {
+      width:32px; height:32px; border-radius:10px; background: var(--grad-primary);
+      display:flex; align-items:center; justify-content:center; font-size:17px;
+      box-shadow: 0 4px 14px rgba(139,92,246,0.4);
+    }
     .nav-right { display:flex; align-items:center; gap:10px; }
     .nav-coins {
-      display:flex; align-items:center; gap:5px;
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:99px; padding:5px 12px; font-size:13px; font-weight:700; color:var(--yellow);
+      display:flex; align-items:center; gap:6px;
+      background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.08));
+      border:1px solid rgba(251,191,36,0.3);
+      border-radius:99px; padding:7px 14px 7px 10px; font-size:13px; font-weight:800; color:var(--gold);
+      box-shadow: 0 2px 12px rgba(251,191,36,0.15);
     }
     .nav-avatar {
-      width:34px; height:34px; border-radius:50%; background:var(--surface2);
-      border:2px solid var(--border2); font-size:18px;
+      width:38px; height:38px; border-radius:50%;
+      background: var(--surface2); border:2px solid var(--border2);
+      font-size:19px;
       display:flex; align-items:center; justify-content:center; cursor:pointer;
+      transition: transform .15s, border-color .15s;
     }
+    .nav-avatar:active { transform: scale(0.92); }
+    .nav-avatar:hover { border-color: var(--accent); }
 
     /* HERO */
-    .hero { padding:20px 16px 0; }
-    .greeting { font-size:22px; font-weight:700; margin-bottom:4px; }
-    .greeting span { color:var(--accent); }
-    .hero-sub { font-size:14px; color:var(--text2); margin-bottom:16px; }
+    .hero { padding:26px 18px 4px; position:relative; z-index:1; }
+    .greeting { font-family:var(--font-display); font-size:26px; font-weight:800; margin-bottom:5px; letter-spacing:-0.01em; }
+    .greeting .wave { display:inline-block; animation: wave 2s ease-in-out infinite; transform-origin: 70% 70%; }
+    @keyframes wave { 0%,100%{transform:rotate(0deg);} 15%{transform:rotate(14deg);} 30%{transform:rotate(-8deg);} 45%{transform:rotate(14deg);} 60%{transform:rotate(0deg);} }
+    .greeting span.name { background: var(--grad-primary); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .hero-sub { font-size:14px; color:var(--text2); margin-bottom:6px; font-weight:500; }
 
     /* CONTINUE PLAYING */
-    .section-title { font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); padding:0 16px; margin-bottom:10px; }
-    .continue-scroll { display:flex; gap:10px; overflow-x:auto; padding:0 16px 4px; scrollbar-width:none; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; padding:0 18px; margin-bottom:12px; }
+    .section-title { font-family:var(--font-display); font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text3); display:flex; align-items:center; gap:7px; }
+    .section-title .dot { width:6px; height:6px; border-radius:50%; background: var(--grad-primary); }
+    .continue-scroll { display:flex; gap:12px; overflow-x:auto; padding:2px 18px 8px; scrollbar-width:none; }
     .continue-scroll::-webkit-scrollbar { display:none; }
     .continue-card {
-      min-width:160px; background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); padding:14px; cursor:pointer;
-      transition:border-color .15s, transform .1s; flex-shrink:0;
+      min-width:172px; background: var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:16px; cursor:pointer;
+      transition: transform .15s cubic-bezier(.2,.8,.2,1), border-color .15s, box-shadow .15s;
+      flex-shrink:0; backdrop-filter: blur(16px); position: relative; overflow: hidden;
     }
-    .continue-card:active { transform:scale(.96); }
-    .continue-card:hover { border-color:var(--border2); }
-    .cc-icon { font-size:28px; margin-bottom:8px; }
-    .cc-title { font-size:14px; font-weight:600; margin-bottom:2px; }
-    .cc-meta { font-size:11px; color:var(--text3); }
-    .cc-progress { height:3px; background:var(--surface3); border-radius:99px; margin-top:8px; overflow:hidden; }
-    .cc-progress-fill { height:100%; border-radius:99px; }
+    .continue-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      background: var(--card-color, var(--grad-primary));
+    }
+    .continue-card:active { transform:scale(.95); }
+    .continue-card:hover { border-color:var(--border2); box-shadow: var(--shadow-md); }
+    .cc-icon { font-size:30px; margin-bottom:10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+    .cc-title { font-size:14px; font-weight:700; margin-bottom:3px; font-family: var(--font-display); }
+    .cc-meta { font-size:11px; color:var(--text3); font-weight:500; }
+    .cc-progress { height:4px; background:var(--surface3); border-radius:99px; margin-top:10px; overflow:hidden; }
+    .cc-progress-fill { height:100%; border-radius:99px; transition: width .3s; }
 
     /* FILTER TABS */
-    .filter-tabs { display:flex; gap:8px; overflow-x:auto; padding:0 16px; scrollbar-width:none; margin-bottom:14px; }
+    .filter-tabs { display:flex; gap:8px; overflow-x:auto; padding:0 18px; scrollbar-width:none; margin-bottom:16px; }
     .filter-tabs::-webkit-scrollbar { display:none; }
     .filter-tab {
-      flex-shrink:0; height:32px; padding:0 14px; border-radius:99px;
-      border:1px solid var(--border); background:transparent;
-      color:var(--text2); font-size:12px; font-weight:600; cursor:pointer;
-      transition:background .12s, border-color .12s, color .12s;
+      flex-shrink:0; height:36px; padding:0 16px; border-radius:99px;
+      border:1px solid var(--border); background: var(--surface);
+      color:var(--text2); font-size:12.5px; font-weight:700; font-family: var(--font-display); cursor:pointer;
+      transition: all .18s; backdrop-filter: blur(12px);
     }
-    .filter-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .filter-tab.active { background: var(--grad-primary); border-color:transparent; color:#fff; box-shadow: 0 4px 16px rgba(139,92,246,0.35); }
+    .filter-tab:not(.active):hover { background: var(--surface2); color: var(--text); }
 
     /* GAME GRID */
-    .game-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px; }
+    .game-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 18px; }
     .game-card {
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); padding:16px 14px; cursor:pointer;
-      transition:transform .12s, border-color .15s;
-      display:flex; flex-direction:column; gap:8px;
+      background: var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:18px 16px; cursor:pointer;
+      transition: transform .18s cubic-bezier(.2,.8,.2,1), border-color .2s, box-shadow .2s;
+      display:flex; flex-direction:column; gap:10px;
+      backdrop-filter: blur(16px); position: relative; overflow: hidden;
+    }
+    .game-card::before {
+      content:''; position:absolute; inset:0; opacity:0; transition: opacity .25s;
+      background: radial-gradient(circle at 30% 0%, var(--card-glow, rgba(139,92,246,0.15)), transparent 70%);
+      pointer-events: none;
     }
     .game-card:active { transform:scale(.95); }
-    .game-card:hover { border-color:var(--border2); }
-    .gc-top { display:flex; align-items:flex-start; justify-content:space-between; }
-    .gc-icon { font-size:36px; line-height:1; }
-    .gc-saved { font-size:10px; font-weight:700; letter-spacing:.04em; padding:2px 7px; border-radius:99px; }
-    .gc-title { font-size:14px; font-weight:700; }
-    .gc-desc { font-size:11px; color:var(--text3); line-height:1.4; }
-    .gc-genre { font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; align-self:flex-start; }
+    .game-card:hover { border-color: var(--border2); box-shadow: var(--shadow-md); }
+    .game-card:hover::before { opacity: 1; }
+    .gc-top { display:flex; align-items:flex-start; justify-content:space-between; position: relative; z-index: 1; }
+    .gc-icon-wrap {
+      width:52px; height:52px; border-radius:16px;
+      display:flex; align-items:center; justify-content:center; font-size:28px;
+      background: var(--icon-bg, rgba(139,92,246,0.12));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .gc-saved {
+      font-size:9px; font-weight:800; letter-spacing:.04em; padding:3px 8px; border-radius:99px;
+      background: rgba(52,211,153,0.15); color:#6EE7B7; border:1px solid rgba(52,211,153,0.3);
+      display:flex; align-items:center; gap:3px;
+    }
+    .gc-saved::before { content:''; width:5px; height:5px; border-radius:50%; background:#34D399; box-shadow: 0 0 6px #34D399; }
+    .gc-title { font-size:15px; font-weight:700; font-family: var(--font-display); position: relative; z-index: 1; }
+    .gc-desc { font-size:11.5px; color:var(--text3); line-height:1.4; position: relative; z-index: 1; }
+    .gc-genre { font-size:10px; font-weight:700; padding:3px 9px; border-radius:99px; align-self:flex-start; position: relative; z-index: 1; }
 
     /* PROFILE MODAL */
-    .profile-stat { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+    .profile-header { display:flex; align-items:center; gap:16px; }
+    .profile-avatar-big {
+      width:64px; height:64px; border-radius:20px; font-size:34px;
+      background: var(--surface2); border: 2px solid var(--border2);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .profile-stat { display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--border); }
     .profile-stat:last-child { border-bottom:none; }
-    .profile-stat-label { font-size:13px; color:var(--text2); }
-    .profile-stat-val { font-size:14px; font-weight:700; }
+    .profile-stat-label { font-size:13.5px; color:var(--text2); font-weight:600; display:flex; align-items:center; gap:8px; }
+    .profile-stat-val { font-size:15px; font-weight:800; font-family: var(--font-display); }
+    .info-banner {
+      background: var(--grad-primary-soft); border:1px solid var(--border-glow);
+      border-radius:var(--rad-sm); padding:13px 14px; font-size:12.5px; color:var(--text2); line-height:1.6;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
 
-    /* EMPTY */
-    .empty-state { text-align:center; padding:40px 20px; color:var(--text3); font-size:14px; }
+    /* EMPTY STATE */
+    .empty-hint { text-align:center; padding:18px 20px; color:var(--text3); font-size:12.5px; font-weight:500; }
 
-    /* TOAST */
     #gv-toast { bottom:24px; }
+
+    @media (max-width: 360px) {
+      .game-grid { gap: 9px; padding: 0 14px; }
+      .game-card { padding: 14px 12px; }
+    }
   </style>
 </head>
 <body>
+<div class="ambient-bg"></div>
 
 <!-- ═══ AUTH SCREEN ═══ -->
 <div id="auth-screen">
-  <div class="auth-logo">🎮</div>
-  <div class="auth-brand">GameVerse</div>
-  <div class="auth-tagline">12 games · 1 account · infinite fun</div>
+  <div class="auth-logo-wrap">
+    <div class="logo-orb">🎮</div>
+    <div class="auth-brand">GameVerse</div>
+    <div class="auth-tagline">12 games · 1 account · infinite fun</div>
+  </div>
 
-  <div class="auth-tabs" style="max-width:360px;">
+  <div class="auth-tabs">
     <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
     <button class="auth-tab" onclick="switchTab('register')">Create Account</button>
   </div>
@@ -145,7 +216,7 @@
     <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
     <div class="auth-divider">or</div>
     <button class="btn btn-ghost" onclick="switchTab('register')">Create a new account</button>
-    <button class="btn btn-ghost btn-sm" onclick="guestPlay()" style="width:100%;height:40px;font-size:13px;">Continue as guest</button>
+    <button class="btn btn-ghost btn-sm" onclick="guestPlay()" style="width:100%;height:42px;font-size:13px;">Continue as guest</button>
   </div>
 
   <!-- REGISTER FORM -->
@@ -176,33 +247,28 @@
 <!-- ═══ HOME SCREEN ═══ -->
 <div id="home-screen">
 
-  <!-- TOP NAV -->
   <div class="top-nav">
-    <div class="nav-brand">🎮 GameVerse</div>
+    <div class="nav-brand"><div class="nav-brand-icon">🎮</div>GameVerse</div>
     <div class="nav-right">
       <div class="nav-coins" id="nav-coins">🪙 100</div>
       <div class="nav-avatar" id="nav-avatar" onclick="showProfile()">😀</div>
     </div>
   </div>
 
-  <!-- HERO -->
   <div class="hero">
-    <div class="greeting">Hey, <span id="hero-name">Player</span>! 👋</div>
+    <div class="greeting"><span class="wave">👋</span> Hey, <span class="name" id="hero-name">Player</span></div>
     <div class="hero-sub">Ready to play? Pick a game below.</div>
   </div>
 
-  <!-- CONTINUE PLAYING -->
-  <div id="continue-section" style="display:none; margin-bottom:20px; margin-top:16px;">
-    <div class="section-title">Continue Playing</div>
+  <div id="continue-section" style="display:none; margin-bottom:24px; margin-top:18px;">
+    <div class="section-header"><div class="section-title"><span class="dot"></span>Continue Playing</div></div>
     <div class="continue-scroll" id="continue-scroll"></div>
   </div>
 
-  <!-- FILTER -->
-  <div style="margin:20px 0 12px;">
+  <div style="margin:22px 0 14px;">
     <div class="filter-tabs" id="filter-tabs"></div>
   </div>
 
-  <!-- GAME GRID -->
   <div class="game-grid" id="game-grid"></div>
 
 </div>
@@ -210,27 +276,28 @@
 <!-- PROFILE MODAL -->
 <div id="profile-modal" class="modal-overlay hidden" onclick="if(event.target.id==='profile-modal'){closeProfile();}">
   <div class="modal" onclick="event.stopPropagation();">
-    <div style="display:flex;align-items:center;gap:14px;">
-      <div style="font-size:48px;" id="pm-avatar">😀</div>
+    <div class="profile-header">
+      <div class="profile-avatar-big" id="pm-avatar">😀</div>
       <div>
-        <div style="font-size:18px;font-weight:700;" id="pm-username">Player</div>
-        <div style="font-size:12px;color:var(--text3);">Local Account · v1.0</div>
+        <div style="font-size:19px;font-weight:800;font-family:var(--font-display);" id="pm-username">Player</div>
+        <div style="font-size:12px;color:var(--text3);font-weight:500;">Local Account · v1.0</div>
       </div>
     </div>
     <div class="divider"></div>
     <div class="profile-stat">
       <span class="profile-stat-label">🪙 Coins</span>
-      <span class="profile-stat-val" id="pm-coins" style="color:var(--yellow)">100</span>
+      <span class="profile-stat-val" id="pm-coins" style="color:var(--gold)">100</span>
     </div>
     <div class="profile-stat">
       <span class="profile-stat-label">🎮 Games saved</span>
       <span class="profile-stat-val" id="pm-saves">0</span>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-sm);padding:12px;font-size:12px;color:var(--text3);line-height:1.6;">
-      🔒 Your account is stored locally on this device. Google Sign-In and cloud sync coming in the next update!
+    <div class="info-banner">
+      <span>🔒</span>
+      <span>Your account is stored locally on this device. Google Sign-In and cloud sync coming in the next update!</span>
     </div>
     <button type="button" class="btn btn-ghost" onclick="doLogout(); return false;">Sign out</button>
-    <button type="button" class="btn btn-ghost btn-sm" style="width:100%;height:36px;" onclick="closeProfile(); return false;">Close</button>
+    <button type="button" class="btn btn-ghost btn-sm" style="width:100%;height:38px;" onclick="closeProfile(); return false;">Close</button>
   </div>
 </div>
 
@@ -243,32 +310,35 @@ const AVATARS = ['😀','😎','🤩','😈','👾','🤖','🦊','🐉','🦁',
 let selectedAvatar = '😀';
 let activeFilter = 'All';
 
-/* ── TOAST ── */
+const GENRE_GRADIENTS = {
+  Casual:'linear-gradient(135deg,#3B82F6,#22D3EE)', Action:'linear-gradient(135deg,#EF4444,#F97316)',
+  Puzzle:'linear-gradient(135deg,#A855F7,#EC4899)', Strategy:'linear-gradient(135deg,#22C55E,#14B8A6)',
+  Physics:'linear-gradient(135deg,#F97316,#EAB308)', Memory:'linear-gradient(135deg,#14B8A6,#3B82F6)',
+  Classic:'linear-gradient(135deg,#84CC16,#22C55E)', Word:'linear-gradient(135deg,#A855F7,#6366F1)',
+  Skill:'linear-gradient(135deg,#06B6D4,#3B82F6)'
+};
+
 function toast(msg, dur=2500) {
   let t=document.getElementById('gv-toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), dur);
 }
 
-/* ── AUTH TABS ── */
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((el,i)=>el.classList.toggle('active',i===(tab==='login'?0:1)));
   document.getElementById('login-form').classList.toggle('hidden', tab!=='login');
   document.getElementById('register-form').classList.toggle('hidden', tab!=='register');
 }
 
-/* ── AVATAR GRID ── */
 function buildAvatarGrid() {
   let grid=document.getElementById('avatar-grid');
   grid.innerHTML=AVATARS.map(a=>`<div class="avatar-opt${a===selectedAvatar?' selected':''}" onclick="selectAvatar('${a}')">${a}</div>`).join('');
 }
-
 function selectAvatar(a) {
   selectedAvatar=a;
   document.querySelectorAll('.avatar-opt').forEach(el=>el.classList.toggle('selected',el.textContent===a));
 }
 
-/* ── LOGIN ── */
 function doLogin() {
   let u=document.getElementById('li-user').value.trim();
   let p=document.getElementById('li-pass').value;
@@ -303,7 +373,6 @@ function doLogout() {
   window.location.href = window.location.pathname + '?t=' + Date.now();
 }
 
-/* ── HOME ── */
 function showHome(user) {
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('home-screen').style.display='block';
@@ -315,7 +384,6 @@ function showHome(user) {
   buildContinueSection();
 }
 
-/* ── FILTERS ── */
 function buildFilterTabs() {
   let genres=['All',...new Set(GV.GAMES.map(g=>g.genre))];
   let tabs=document.getElementById('filter-tabs');
@@ -328,33 +396,27 @@ function setFilter(g) {
   buildGameGrid();
 }
 
-/* ── GAME GRID ── */
 function buildGameGrid() {
   let saves=GV.Save.getAllForUser();
   let games=GV.GAMES.filter(g=>activeFilter==='All'||g.genre===activeFilter);
   let grid=document.getElementById('game-grid');
+  if (games.length===0) { grid.innerHTML='<div class="empty-hint" style="grid-column:1/-1;">No games in this category yet.</div>'; return; }
   grid.innerHTML=games.map(g=>{
     let save=saves[g.id];
-    let savedBadge=save?`<span class="gc-saved chip chip-green" style="font-size:9px;padding:2px 6px;">SAVED</span>`:'';
-    let genreColor=genreChipColor(g.genre);
-    return `<div class="game-card" onclick="launchGame('${g.file}','${g.id}','${g.title}')" style="border-top:3px solid ${g.color}20;">
+    let savedBadge=save?`<span class="gc-saved">SAVED</span>`:'';
+    let grad=GENRE_GRADIENTS[g.genre]||'linear-gradient(135deg,#8B5CF6,#22D3EE)';
+    return `<div class="game-card" style="--card-glow:${g.color}33;" onclick="launchGame('${g.file}','${g.id}','${g.title}')">
       <div class="gc-top">
-        <div class="gc-icon">${g.icon}</div>
+        <div class="gc-icon-wrap" style="--icon-bg:${g.color}1f;">${g.icon}</div>
         ${savedBadge}
       </div>
       <div class="gc-title">${g.title}</div>
       <div class="gc-desc">${g.desc}</div>
-      <div class="gc-genre chip" style="background:${g.color}20;color:${g.color};border:1px solid ${g.color}30;">${g.genre}</div>
+      <div class="gc-genre" style="background:${g.color}22;color:${g.color};border:1px solid ${g.color}40;">${g.genre}</div>
     </div>`;
   }).join('');
 }
 
-function genreChipColor(genre) {
-  let map={Casual:'chip-blue',Action:'chip-red',Puzzle:'chip-purple',Strategy:'chip-green',Physics:'chip-yellow',Memory:'chip-blue',Classic:'chip-green',Word:'chip-purple',Skill:'chip-blue'};
-  return map[genre]||'chip-blue';
-}
-
-/* ── CONTINUE SECTION ── */
 function buildContinueSection() {
   let saves=GV.Save.getAllForUser();
   let entries=Object.entries(saves);
@@ -365,16 +427,16 @@ function buildContinueSection() {
     let game=GV.GAMES.find(g=>g.id===gid);
     if (!game) return '';
     let pct=Math.min(100, Math.round(((save.level||1)/20)*100));
-    return `<div class="continue-card" onclick="launchGame('${game.file}','${game.id}','${game.title}')">
+    let grad=GENRE_GRADIENTS[game.genre]||'linear-gradient(135deg,#8B5CF6,#22D3EE)';
+    return `<div class="continue-card" style="--card-color:${grad};" onclick="launchGame('${game.file}','${game.id}','${game.title}')">
       <div class="cc-icon">${game.icon}</div>
       <div class="cc-title">${game.title}</div>
       <div class="cc-meta">Level ${save.level||1} · ${GV.Utils.timeAgo(save.savedAt)}</div>
-      <div class="cc-progress"><div class="cc-progress-fill" style="width:${pct}%;background:${game.color};"></div></div>
+      <div class="cc-progress"><div class="cc-progress-fill" style="width:${pct}%;background:${grad};"></div></div>
     </div>`;
   }).join('');
 }
 
-/* ── LAUNCH ── */
 function launchGame(file, id, title) {
   let user=GV.Auth.current();
   if (!user) { toast('Please sign in to play!'); return; }
@@ -382,7 +444,6 @@ function launchGame(file, id, title) {
   window.location.href=file;
 }
 
-/* ── PROFILE ── */
 function showProfile() {
   let user=GV.Auth.current();
   if (!user) return;
@@ -396,7 +457,7 @@ function closeProfile() {
   document.getElementById('profile-modal').classList.add('hidden');
 }
 
-/* ── INIT ── */
+/* INIT */
 buildAvatarGrid();
 let existing=GV.Auth.current();
 if (existing) showHome(existing);
