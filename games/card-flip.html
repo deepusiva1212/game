@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Card Flip — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:#0a1818; padding-bottom:24px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .hud { display:flex; justify-content:space-between; padding:0 16px; margin-bottom:16px; gap:8px; }
+    .hud-box { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center; }
+    .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+    .hud-val { font-size:18px; font-weight:800; }
+    .card-grid { display:grid; gap:8px; padding:0 16px; }
+    .card {
+      aspect-ratio:0.75; border-radius:10px; cursor:pointer;
+      position:relative; perspective:600px;
+    }
+    .card-inner {
+      width:100%; height:100%; transition:transform .4s; transform-style:preserve-3d; position:relative;
+    }
+    .card.flipped .card-inner { transform:rotateY(180deg); }
+    .card-face {
+      position:absolute; width:100%; height:100%; border-radius:10px;
+      display:flex; align-items:center; justify-content:center; font-size:26px;
+      backface-visibility:hidden;
+    }
+    .card-back { background:linear-gradient(135deg,#14B8A6,#0D9488); }
+    .card-front { background:var(--surface2); transform:rotateY(180deg); border:2px solid #14B8A6; }
+    .card.matched .card-front { background:rgba(34,197,94,.2); border-color:#22C55E; }
+    #win-overlay {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:16px;
+      background:rgba(0,15,15,.92); padding:24px;
+    }
+    .win-emoji { font-size:60px; }
+    .win-title { font-size:26px; font-weight:800; }
+    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#14B8A6; color:#fff; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">🃏 Card Flip</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div class="hud">
+  <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level-display">1</div></div>
+  <div class="hud-box"><div class="hud-label">Moves</div><div class="hud-val" id="moves-display">0</div></div>
+  <div class="hud-box"><div class="hud-label">Matched</div><div class="hud-val" id="matched-display">0</div></div>
+</div>
+
+<div class="card-grid" id="card-grid"></div>
+
+<div id="win-overlay" class="hidden">
+  <div class="win-emoji">🎉</div>
+  <div class="win-title">All Matched!</div>
+  <div style="color:var(--text2);font-size:14px;">Solved in <span id="win-moves" style="color:#14B8A6;font-weight:700;"></span> moves</div>
+  <button class="play-btn" onclick="nextLevel()">Next Level →</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='cardMatch';
+const ICONS=['🍎','🍌','🍇','🍓','🍉','🥝','🍑','🍒','🥑','🍍','🥭','🍐','🫐','🍋','🍅','🥥'];
+let level=1, moves=0, matched=0, cards=[], flipped=[], busy=false, cols=4;
+
+function $(id){return document.getElementById(id);}
+
+function buildLevel(fromSave){
+  let pairCount=Math.min(8,4+Math.floor(level/2));
+  cols = pairCount<=6?4:pairCount<=8?4:5;
+  if(!fromSave){
+    let icons=ICONS.slice(0,pairCount);
+    let deck=[...icons,...icons];
+    deck=deck.map(v=>({value:v,flipped:false,matched:false}));
+    for(let i=deck.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+    cards=deck; moves=0; matched=0;
+  }
+  renderCards();
+  updateHUD();
+}
+
+function renderCards(){
+  let grid=$('card-grid');
+  grid.style.gridTemplateColumns=`repeat(${cols}, 1fr)`;
+  grid.innerHTML='';
+  cards.forEach((card,idx)=>{
+    let div=document.createElement('div');
+    div.className='card'+(card.flipped?' flipped':'')+(card.matched?' matched':'');
+    div.innerHTML=`<div class="card-inner">
+      <div class="card-face card-back">❓</div>
+      <div class="card-face card-front">${card.value}</div>
+    </div>`;
+    div.onclick=()=>onCardClick(idx);
+    grid.appendChild(div);
+  });
+}
+
+function onCardClick(idx){
+  if(busy) return;
+  let card=cards[idx];
+  if(card.flipped||card.matched) return;
+  if(flipped.length>=2) return;
+  card.flipped=true;
+  flipped.push(idx);
+  renderCards();
+  playFlip();
+  if(flipped.length===2){
+    busy=true; moves++; updateHUD();
+    let [i1,i2]=flipped;
+    if(cards[i1].value===cards[i2].value){
+      setTimeout(()=>{
+        cards[i1].matched=true; cards[i2].matched=true;
+        matched++; flipped=[]; busy=false;
+        renderCards(); updateHUD(); playMatch();
+        if(navigator.vibrate)navigator.vibrate(30);
+        if(matched===cards.length/2) onWin();
+        saveProgress();
+      },400);
+    } else {
+      setTimeout(()=>{
+        cards[i1].flipped=false; cards[i2].flipped=false;
+        flipped=[]; busy=false;
+        renderCards();
+        saveProgress();
+      },800);
+    }
+  }
+}
+
+function updateHUD(){
+  $('level-display').textContent=level;
+  $('moves-display').textContent=moves;
+  $('matched-display').textContent=matched+'/'+(cards.length/2);
+}
+
+function onWin(){
+  $('win-moves').textContent=moves;
+  $('win-overlay').classList.remove('hidden');
+  GV.Auth.updateCoins(15);
+  saveProgress();
+}
+function nextLevel(){ level++; $('win-overlay').classList.add('hidden'); buildLevel(false); saveProgress(); }
+
+let audioCtx=null;
+function tone(f,d,v=0.15){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=f;o.type='sine';
+    g.gain.setValueAtTime(v,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);
+    o.start();o.stop(audioCtx.currentTime+d);
+  }catch(e){}
+}
+function playFlip(){ tone(400,0.08); }
+function playMatch(){ tone(700,0.1); setTimeout(()=>tone(1000,0.15),80); }
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{level,moves,matched,cards,score:matched,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save&&save.cards&&save.cards.length>0){
+  level=save.level||1; moves=save.moves||0; matched=save.matched||0; cards=save.cards;
+  buildLevel(true);
+} else {
+  buildLevel(false);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Word Quest — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:#14081a; padding-bottom:24px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .hud { display:flex; justify-content:space-between; padding:0 16px; margin-bottom:14px; gap:8px; }
+    .hud-box { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center; }
+    .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+    .hud-val { font-size:17px; font-weight:800; }
+    .word-list { display:flex; gap:6px; flex-wrap:wrap; padding:0 16px; margin-bottom:14px; }
+    .word-chip { font-size:12px; font-weight:600; padding:5px 12px; border-radius:99px; background:var(--surface); border:1px solid var(--border); color:var(--text2); }
+    .word-chip.found { background:rgba(168,85,247,.2); border-color:#A855F7; color:#C084FC; text-decoration:line-through; }
+    .grid-wrap { display:flex; justify-content:center; padding:0 12px; }
+    #letter-grid {
+      display:grid; gap:3px; background:var(--surface); border:1px solid var(--border);
+      border-radius:14px; padding:8px; touch-action:none; user-select:none;
+    }
+    .letter-cell {
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; font-weight:700; border-radius:6px; background:var(--surface2);
+      color:var(--text); cursor:pointer; transition:background .1s;
+    }
+    .letter-cell.selecting { background:#A855F7; color:#fff; }
+    .letter-cell.found { background:rgba(168,85,247,.35); color:#fff; }
+    #win-overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:rgba(15,5,20,.92); padding:24px; }
+    .win-emoji { font-size:60px; }
+    .win-title { font-size:26px; font-weight:800; }
+    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#A855F7; color:#fff; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">📝 Word Quest</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div class="hud">
+  <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level-display">1</div></div>
+  <div class="hud-box"><div class="hud-label">Found</div><div class="hud-val" id="found-display">0/0</div></div>
+  <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="score-display">0</div></div>
+</div>
+
+<div class="word-list" id="word-list"></div>
+<div class="grid-wrap"><div id="letter-grid"></div></div>
+
+<div id="win-overlay" class="hidden">
+  <div class="win-emoji">🎉</div>
+  <div class="win-title">All Words Found!</div>
+  <button class="play-btn" onclick="nextLevel()">Next Level →</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='wordPuzzle';
+const WORD_BANK=[
+  ['CAT','DOG','SUN','RUN'],
+  ['STAR','MOON','TREE','FISH'],
+  ['HOUSE','APPLE','MUSIC','HAPPY'],
+  ['GARDEN','PUZZLE','PLANET','BRIDGE'],
+  ['RAINBOW','MOUNTAIN','ELEPHANT','SUNSHINE'],
+];
+const GRID_SIZE=10;
+let level=1, score=0, words=[], found=[], grid=[], gridSize=GRID_SIZE;
+let selecting=false, selectedCells=[];
+
+function $(id){return document.getElementById(id);}
+
+function getWordsForLevel(){
+  let idx=Math.min(WORD_BANK.length-1, Math.floor((level-1)/2));
+  return WORD_BANK[idx];
+}
+
+function buildGrid(fromSave){
+  if(!fromSave){
+    words=getWordsForLevel();
+    found=[];
+    gridSize=Math.max(8,Math.max(...words.map(w=>w.length))+2);
+    grid=Array.from({length:gridSize},()=>Array(gridSize).fill(''));
+    placeWords();
+    fillRandom();
+  }
+  renderWordList();
+  renderGrid();
+  updateHUD();
+}
+
+function placeWords(){
+  const dirs=[[1,0],[0,1],[1,1],[-1,1]];
+  words.forEach(word=>{
+    let placed=false, attempts=0;
+    while(!placed&&attempts<200){
+      attempts++;
+      let dir=dirs[Math.floor(Math.random()*dirs.length)];
+      let r=Math.floor(Math.random()*gridSize), c=Math.floor(Math.random()*gridSize);
+      let endR=r+dir[1]*(word.length-1), endC=c+dir[0]*(word.length-1);
+      if(endR<0||endR>=gridSize||endC<0||endC>=gridSize) continue;
+      let fits=true;
+      for(let i=0;i<word.length;i++){
+        let cr=r+dir[1]*i, cc=c+dir[0]*i;
+        if(grid[cr][cc]!==''&&grid[cr][cc]!==word[i]){ fits=false; break; }
+      }
+      if(fits){
+        for(let i=0;i<word.length;i++){
+          let cr=r+dir[1]*i, cc=c+dir[0]*i;
+          grid[cr][cc]=word[i];
+        }
+        placed=true;
+      }
+    }
+  });
+}
+function fillRandom(){
+  const alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(let r=0;r<gridSize;r++) for(let c=0;c<gridSize;c++)
+    if(grid[r][c]==='') grid[r][c]=alphabet[Math.floor(Math.random()*26)];
+}
+
+function renderWordList(){
+  $('word-list').innerHTML=words.map(w=>`<div class="word-chip${found.includes(w)?' found':''}">${w}</div>`).join('');
+}
+
+function renderGrid(){
+  let container=$('letter-grid');
+  let cellSize=Math.min(34,Math.floor((Math.min(window.innerWidth,480)-40)/gridSize));
+  container.style.gridTemplateColumns=`repeat(${gridSize}, ${cellSize}px)`;
+  container.innerHTML='';
+  for(let r=0;r<gridSize;r++){
+    for(let c=0;c<gridSize;c++){
+      let cell=document.createElement('div');
+      cell.className='letter-cell';
+      cell.style.width=cellSize+'px'; cell.style.height=cellSize+'px';
+      cell.style.fontSize=Math.floor(cellSize*0.42)+'px';
+      cell.textContent=grid[r][c];
+      cell.dataset.r=r; cell.dataset.c=c;
+      cell.addEventListener('pointerdown',()=>startSelect(r,c,cell));
+      cell.addEventListener('pointerenter',()=>continueSelect(r,c,cell));
+      container.appendChild(cell);
+    }
+  }
+  document.addEventListener('pointerup',endSelect);
+}
+
+function startSelect(r,c,el){ selecting=true; selectedCells=[{r,c,el}]; el.classList.add('selecting'); }
+function continueSelect(r,c,el){
+  if(!selecting) return;
+  let last=selectedCells[selectedCells.length-1];
+  if(last.r===r&&last.c===c) return;
+  // simple linear selection check
+  if(selectedCells.length===1||isInLine(selectedCells[0],{r,c})){
+    if(!selectedCells.find(s=>s.r===r&&s.c===c)){
+      selectedCells.push({r,c,el}); el.classList.add('selecting');
+    }
+  }
+}
+function isInLine(start,end){
+  let dr=end.r-start.r, dc=end.c-start.c;
+  if(dr===0||dc===0||Math.abs(dr)===Math.abs(dc)) return true;
+  return false;
+}
+function endSelect(){
+  if(!selecting) return;
+  selecting=false;
+  // rebuild path strictly along line from first to last
+  if(selectedCells.length>=2){
+    let first=selectedCells[0], last=selectedCells[selectedCells.length-1];
+    let dr=Math.sign(last.r-first.r), dc=Math.sign(last.c-first.c);
+    let len=Math.max(Math.abs(last.r-first.r),Math.abs(last.c-first.c))+1;
+    let path=[];
+    for(let i=0;i<len;i++){ path.push({r:first.r+dr*i,c:first.c+dc*i}); }
+    let str=path.map(p=>grid[p.r][p.c]).join('');
+    let strRev=str.split('').reverse().join('');
+    let match=words.find(w=>(w===str||w===strRev)&&!found.includes(w));
+    if(match){
+      found.push(match);
+      path.forEach(p=>{
+        let el=document.querySelector(`.letter-cell[data-r="${p.r}"][data-c="${p.c}"]`);
+        if(el) el.classList.add('found');
+      });
+      score+=match.length*10;
+      playFound();
+      if(navigator.vibrate)navigator.vibrate(30);
+      renderWordList(); updateHUD();
+      if(found.length===words.length) onWin();
+      saveProgress();
+    }
+  }
+  document.querySelectorAll('.letter-cell.selecting').forEach(el=>el.classList.remove('selecting'));
+  selectedCells=[];
+}
+
+function updateHUD(){
+  $('level-display').textContent=level;
+  $('found-display').textContent=found.length+'/'+words.length;
+  $('score-display').textContent=score.toLocaleString();
+}
+
+function onWin(){
+  $('win-overlay').classList.remove('hidden');
+  GV.Auth.updateCoins(20);
+  saveProgress();
+}
+function nextLevel(){ level++; $('win-overlay').classList.add('hidden'); buildGrid(false); saveProgress(); }
+
+let audioCtx=null;
+function tone(f,d,v=0.15){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=f;o.type='sine';
+    g.gain.setValueAtTime(v,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);
+    o.start();o.stop(audioCtx.currentTime+d);
+  }catch(e){}
+}
+function playFound(){ tone(600,0.1); setTimeout(()=>tone(900,0.15),60); }
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{level,score,words,found,grid,gridSize,score_:score,score:score,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save&&save.grid&&save.grid.length>0){
+  level=save.level||1; score=save.score||0; words=save.words||[];
+  found=save.found||[]; grid=save.grid; gridSize=save.gridSize||GRID_SIZE;
+  buildGrid(true);
+} else {
+  buildGrid(false);
+}
+</script>
+</body>
+</html>

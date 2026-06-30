@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Coin Kingdom — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:linear-gradient(180deg,#2a1a05,#0a0a0a); padding-bottom:24px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .balance-card {
+      margin:0 16px 20px; background:var(--surface); border:1px solid var(--border);
+      border-radius:18px; padding:24px; text-align:center;
+    }
+    .balance-label { font-size:12px; color:var(--text3); font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+    .balance-val { font-size:42px; font-weight:800; color:#EAB308; margin:6px 0; }
+    .balance-sub { font-size:13px; color:var(--text2); }
+    .wheel-wrap { display:flex; justify-content:center; padding:10px 0 24px; position:relative; }
+    #wheel-canvas { transition:transform 4s cubic-bezier(.17,.67,.21,1); }
+    .pointer { position:absolute; top:-6px; left:50%; transform:translateX(-50%); font-size:28px; z-index:10; }
+    .spin-btn-wrap { padding:0 16px; }
+    .spin-btn { width:100%; height:56px; border-radius:16px; border:none; background:linear-gradient(135deg,#EAB308,#F97316); color:#fff; font-size:18px; font-weight:800; cursor:pointer; box-shadow:0 6px 20px rgba(234,179,8,.3); }
+    .spin-btn:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; }
+    .timer-text { text-align:center; font-size:13px; color:var(--text2); margin-top:10px; }
+    .village-section { padding:24px 16px 0; }
+    .village-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+    .building-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; text-align:center; cursor:pointer; transition:transform .1s; }
+    .building-card:active { transform:scale(.95); }
+    .building-icon { font-size:32px; margin-bottom:6px; }
+    .building-name { font-size:13px; font-weight:700; }
+    .building-level { font-size:11px; color:var(--text3); margin:2px 0; }
+    .building-cost { font-size:12px; font-weight:700; color:#EAB308; }
+    .building-cost.afford { color:#22C55E; }
+    .result-popup {
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.75); z-index:99; opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    .result-popup.show { opacity:1; pointer-events:all; }
+    .result-card { background:var(--surface2); border:1px solid var(--border2); border-radius:18px; padding:32px; text-align:center; }
+    .result-emoji { font-size:56px; margin-bottom:10px; }
+    .result-amt { font-size:32px; font-weight:800; color:#EAB308; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">🪙 Coin Kingdom</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div class="balance-card">
+  <div class="balance-label">Your Coins</div>
+  <div class="balance-val" id="balance">0</div>
+  <div class="balance-sub">Level <span id="kingdom-level">1</span> Kingdom</div>
+</div>
+
+<div class="wheel-wrap">
+  <div class="pointer">🔻</div>
+  <canvas id="wheel-canvas" width="260" height="260"></canvas>
+</div>
+
+<div class="spin-btn-wrap">
+  <button class="spin-btn" id="spin-btn" onclick="spin()">🎰 SPIN (Free)</button>
+  <div class="timer-text" id="timer-text"></div>
+</div>
+
+<div class="village-section">
+  <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);">Your Village</div>
+  <div class="village-grid" id="village-grid"></div>
+</div>
+
+<div class="result-popup" id="result-popup">
+  <div class="result-card">
+    <div class="result-emoji" id="result-emoji">🎉</div>
+    <div class="result-amt" id="result-amt">+500</div>
+  </div>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='coinFarm';
+const SEGMENTS=[
+  {label:'50',value:50,color:'#3B82F6'},
+  {label:'100',value:100,color:'#22C55E'},
+  {label:'JACKPOT',value:2000,color:'#EAB308'},
+  {label:'20',value:20,color:'#EF4444'},
+  {label:'200',value:200,color:'#A855F7'},
+  {label:'10',value:10,color:'#F97316'},
+  {label:'500',value:500,color:'#EC4899'},
+  {label:'30',value:30,color:'#14B8A6'},
+];
+const BUILDINGS=[
+  {id:'house',name:'House',icon:'🏠',baseCost:100},
+  {id:'farm',name:'Farm',icon:'🌾',baseCost:250},
+  {id:'mine',name:'Mine',icon:'⛏️',baseCost:500},
+  {id:'castle',name:'Castle',icon:'🏰',baseCost:1500},
+];
+
+let coins=0, kingdomLevel=1, spinning=false, lastSpinTime=0, SPIN_COOLDOWN=30000; // 30s for demo (would be hours in real game)
+let buildings={house:0,farm:0,mine:0,castle:0};
+
+function $(id){return document.getElementById(id);}
+
+function drawWheel(){
+  let canvas=$('wheel-canvas'), ctx=canvas.getContext('2d');
+  let cx=130,cy=130,r=120;
+  let anglePer=(Math.PI*2)/SEGMENTS.length;
+  ctx.clearRect(0,0,260,260);
+  SEGMENTS.forEach((seg,i)=>{
+    let start=i*anglePer-Math.PI/2, end=start+anglePer;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end); ctx.closePath();
+    ctx.fillStyle=seg.color; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.save();
+    ctx.translate(cx,cy); ctx.rotate(start+anglePer/2);
+    ctx.fillStyle='#fff'; ctx.font='bold 13px system-ui'; ctx.textAlign='center';
+    ctx.fillText(seg.label, r*0.62, 5);
+    ctx.restore();
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,18,0,Math.PI*2); ctx.fillStyle='#1a1a1a'; ctx.fill();
+  ctx.strokeStyle='#EAB308'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#EAB308'; ctx.font='18px system-ui'; ctx.textAlign='center'; ctx.fillText('🪙',cx,cy+6);
+}
+
+let currentRotation=0;
+function spin(){
+  if(spinning) return;
+  let now=Date.now();
+  if(now-lastSpinTime<SPIN_COOLDOWN){ return; }
+  spinning=true;
+  $('spin-btn').disabled=true;
+
+  let idx=Math.floor(Math.random()*SEGMENTS.length);
+  let anglePer=360/SEGMENTS.length;
+  let targetAngle=360*5 + (360-(idx*anglePer+anglePer/2));
+  currentRotation+=targetAngle;
+  let canvas=$('wheel-canvas');
+  canvas.style.transform=`rotate(${currentRotation}deg)`;
+
+  playSpinSound();
+
+  setTimeout(()=>{
+    let seg=SEGMENTS[idx];
+    coins+=seg.value;
+    $('balance').textContent=coins.toLocaleString();
+    GV.Auth.updateCoins(seg.value);
+    showResult(seg);
+    lastSpinTime=Date.now();
+    spinning=false;
+    updateSpinButton();
+    renderVillage();
+    saveProgress();
+    if(navigator.vibrate) navigator.vibrate(seg.value>=500?[50,30,50,30,100]:50);
+  }, 4000);
+}
+
+function showResult(seg){
+  let popup=$('result-popup');
+  $('result-emoji').textContent = seg.value>=1000?'🎉':seg.value>=200?'✨':'🪙';
+  $('result-amt').textContent='+'+seg.value;
+  popup.classList.add('show');
+  setTimeout(()=>popup.classList.remove('show'), 1800);
+}
+
+let audioCtx=null;
+function playSpinSound(){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let ticks=20;
+    for(let i=0;i<ticks;i++){
+      setTimeout(()=>{
+        let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.connect(g);g.connect(audioCtx.destination);
+        o.frequency.value=300+i*5;o.type='square';
+        g.gain.setValueAtTime(0.08,audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);
+        o.start();o.stop(audioCtx.currentTime+0.05);
+      }, i*200*(1+i*0.05));
+    }
+  }catch(e){}
+}
+
+function updateSpinButton(){
+  let now=Date.now();
+  let remaining=SPIN_COOLDOWN-(now-lastSpinTime);
+  if(remaining<=0){
+    $('spin-btn').disabled=false;
+    $('spin-btn').textContent='🎰 SPIN (Free)';
+    $('timer-text').textContent='';
+  } else {
+    $('spin-btn').disabled=true;
+    let s=Math.ceil(remaining/1000);
+    $('spin-btn').textContent='⏳ Next spin in '+s+'s';
+    $('timer-text').textContent='Come back soon for another free spin!';
+    setTimeout(updateSpinButton,1000);
+  }
+}
+
+function buildingCost(b){ return Math.floor(b.baseCost*Math.pow(1.6,buildings[b.id])); }
+
+function renderVillage(){
+  let grid=$('village-grid');
+  grid.innerHTML=BUILDINGS.map(b=>{
+    let cost=buildingCost(b);
+    let afford=coins>=cost;
+    return `<div class="building-card" onclick="buyBuilding('${b.id}')">
+      <div class="building-icon">${b.icon}</div>
+      <div class="building-name">${b.name}</div>
+      <div class="building-level">Level ${buildings[b.id]}</div>
+      <div class="building-cost ${afford?'afford':''}">🪙 ${cost.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+  let totalLevels=Object.values(buildings).reduce((a,b)=>a+b,0);
+  kingdomLevel=1+Math.floor(totalLevels/2);
+  $('kingdom-level').textContent=kingdomLevel;
+}
+
+function buyBuilding(id){
+  let b=BUILDINGS.find(x=>x.id===id);
+  let cost=buildingCost(b);
+  if(coins<cost) { if(navigator.vibrate) navigator.vibrate(100); return; }
+  coins-=cost;
+  buildings[id]++;
+  GV.Auth.updateCoins(-cost);
+  $('balance').textContent=coins.toLocaleString();
+  renderVillage();
+  saveProgress();
+  if(navigator.vibrate) navigator.vibrate(30);
+}
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{
+    coins, kingdomLevel, buildings, lastSpinTime,
+    score:coins, level:kingdomLevel,
+    savedAt:new Date().toISOString()
+  });
+}
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save){
+  coins=save.coins||0; kingdomLevel=save.kingdomLevel||1;
+  buildings=save.buildings||buildings; lastSpinTime=save.lastSpinTime||0;
+}
+$('balance').textContent=coins.toLocaleString();
+drawWheel();
+renderVillage();
+updateSpinButton();
+</script>
+</body>
+</html>

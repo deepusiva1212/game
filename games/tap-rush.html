@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Tap Rush — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { padding-bottom:24px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .screen { max-width:420px; margin:0 auto; padding:0 20px 32px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+    .logo-wrap { display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:8px; }
+    .logo-emoji { font-size:56px; }
+    .logo-title { font-size:28px; font-weight:800; }
+    .logo-sub { font-size:14px; color:var(--text2); text-align:center; max-width:260px; line-height:1.5; }
+    .best-chip { background:rgba(234,179,8,.15); border:1px solid rgba(234,179,8,.3); color:#EAB308; font-size:13px; font-weight:600; padding:5px 14px; border-radius:99px; }
+    .mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; }
+    .mode-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 14px; text-align:center; cursor:pointer; transition:transform .1s; }
+    .mode-card:active { transform:scale(.95); }
+    .mode-icon { font-size:28px; margin-bottom:6px; }
+    .mode-name { font-size:14px; font-weight:600; }
+    .mode-desc { font-size:12px; color:var(--text3); margin-top:3px; }
+    .hud-row { display:flex; gap:8px; width:100%; max-width:420px; padding:0 20px; }
+    .hud-box { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center; }
+    .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+    .hud-val { font-size:20px; font-weight:800; }
+    .timer-wrap { width:100%; max-width:380px; height:6px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+    .timer-fill { height:100%; border-radius:99px; transition:width .08s linear, background .25s; background:#3B82F6; }
+    .q-box { width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px 20px; text-align:center; min-height:130px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+    .q-label { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text3); }
+    .q-text { font-size:32px; font-weight:700; }
+    .color-swatch { width:80px; height:80px; border-radius:50%; border:3px solid rgba(255,255,255,.15); }
+    .answers-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; max-width:380px; }
+    .answer-btn { height:68px; border-radius:14px; border:2px solid rgba(255,255,255,.1); cursor:pointer; font-size:15px; font-weight:700; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.4); transition:transform .1s; }
+    .answer-btn:active { transform:scale(.94); }
+    @keyframes flash-correct { 0%{filter:brightness(1.6);} 100%{filter:brightness(1);} }
+    @keyframes flash-wrong { 0%{transform:scale(1) rotate(-5deg);filter:brightness(.5);} 50%{transform:scale(1) rotate(5deg);} 100%{transform:scale(1);} }
+    .answer-btn.correct { animation:flash-correct .4s ease forwards; }
+    .answer-btn.wrong { animation:flash-wrong .4s ease forwards; }
+    .combo-row { width:100%; max-width:380px; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 16px; }
+    .dots { display:flex; gap:6px; }
+    .dot { width:10px; height:10px; border-radius:50%; background:var(--surface2); border:1px solid var(--border2); }
+    .dot.on { background:#EAB308; border-color:#EAB308; }
+    .combo-bonus { font-size:12px; font-weight:700; color:#EAB308; margin-left:auto; }
+    .score-pop { position:fixed; font-size:22px; font-weight:800; pointer-events:none; z-index:999; animation:pop-float .75s ease forwards; }
+    @keyframes pop-float { 0%{opacity:1;transform:translateY(0) scale(1);} 100%{opacity:0;transform:translateY(-60px) scale(1.4);} }
+    .result-card { width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:28px 24px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .result-icon { font-size:56px; }
+    .result-title { font-size:22px; font-weight:700; }
+    .big-score { font-size:56px; font-weight:800; }
+    .new-best-label { font-size:14px; font-weight:700; color:#EAB308; }
+    .stat-row { display:flex; gap:28px; margin-top:6px; }
+    .stat-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
+    .stat-n { font-size:24px; font-weight:700; }
+    .stat-l { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">🎨 Tap Rush</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div id="screen-splash" class="screen">
+  <div class="logo-wrap">
+    <div class="logo-emoji">🎨</div>
+    <div class="logo-title">Tap Rush</div>
+    <div class="logo-sub">Tap the right color before time runs out!</div>
+  </div>
+  <div id="best-chip" class="best-chip hidden">🏆 Best: 0</div>
+  <div class="mode-grid">
+    <div class="mode-card" onclick="startGame('classic')"><div class="mode-icon">⚡</div><div class="mode-name">Classic</div><div class="mode-desc">3 lives</div></div>
+    <div class="mode-card" onclick="startGame('zen')"><div class="mode-icon">🌊</div><div class="mode-name">Zen</div><div class="mode-desc">No penalty</div></div>
+    <div class="mode-card" onclick="startGame('blitz')"><div class="mode-icon">🔥</div><div class="mode-name">Blitz</div><div class="mode-desc">30 sec</div></div>
+    <div class="mode-card" onclick="startGame('dark')"><div class="mode-icon">🌑</div><div class="mode-name">Dark</div><div class="mode-desc">No labels</div></div>
+  </div>
+</div>
+
+<div id="screen-game" class="screen hidden">
+  <div class="hud-row">
+    <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="score-display">0</div></div>
+    <div class="hud-box"><div class="hud-label">Streak</div><div class="hud-val" id="streak-display">0</div></div>
+    <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level-display">1</div></div>
+  </div>
+  <div class="timer-wrap"><div class="timer-fill" id="timer-fill" style="width:100%;"></div></div>
+  <div class="q-box">
+    <div class="q-label" id="q-label">Tap this color</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="color-swatch hidden" id="q-swatch"></div>
+  </div>
+  <div class="answers-grid" id="answers-grid"></div>
+  <div class="combo-row">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);">Combo</div>
+    <div class="dots" id="combo-dots"><div class="dot" id="d0"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div><div class="dot" id="d4"></div></div>
+    <div class="combo-bonus" id="combo-bonus"></div>
+  </div>
+</div>
+
+<div id="screen-result" class="screen hidden">
+  <div class="result-card">
+    <div class="result-icon" id="result-icon">🎉</div>
+    <div class="result-title" id="result-title">Round over!</div>
+    <div class="big-score" id="result-score">0</div>
+    <div class="new-best-label hidden" id="new-best-label">🏆 New best score!</div>
+    <div class="stat-row">
+      <div class="stat-item"><div class="stat-n" id="res-level">1</div><div class="stat-l">Level</div></div>
+      <div class="stat-item"><div class="stat-n" id="res-streak">0</div><div class="stat-l">Streak</div></div>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="restartGame()">▶ Play again</button>
+  <button class="btn btn-ghost" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='tapRush';
+const COLORS=[
+  {name:'Red',hex:'#EF4444'},{name:'Blue',hex:'#3B82F6'},{name:'Green',hex:'#22C55E'},
+  {name:'Yellow',hex:'#EAB308'},{name:'Purple',hex:'#A855F7'},{name:'Orange',hex:'#F97316'},
+  {name:'Pink',hex:'#EC4899'},{name:'Teal',hex:'#14B8A6'},
+];
+let score=0,lives=3,level=1,streak=0,bestStreak=0,correct=0;
+let timerPct=100,timerInterval=null,answerLocked=false,roundTime=3000;
+let currentMode='classic',bestScores={};
+
+function $(id){return document.getElementById(id);}
+function shuffle(a){let arr=[...a];for(let i=arr.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function pick(arr,n){return shuffle(arr).slice(0,n);}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+function showSplash(){
+  $('screen-splash').classList.remove('hidden');
+  $('screen-game').classList.add('hidden');
+  $('screen-result').classList.add('hidden');
+  let best=Math.max(0,...Object.values(bestScores));
+  if(best>0){ $('best-chip').textContent='🏆 Best: '+best; $('best-chip').classList.remove('hidden'); }
+}
+
+function startGame(mode){
+  currentMode=mode;
+  score=0;lives=3;level=1;streak=0;bestStreak=0;correct=0;
+  roundTime=mode==='blitz'?1800:3000;answerLocked=false;
+  $('screen-splash').classList.add('hidden');
+  $('screen-result').classList.add('hidden');
+  $('screen-game').classList.remove('hidden');
+  updateHUD(); nextQuestion();
+}
+
+function nextQuestion(){
+  if(answerLocked) return;
+  clearInterval(timerInterval);
+  let numColors=Math.min(6,2+Math.floor(level/2));
+  let pool=pick(COLORS,numColors);
+  let target=rand(pool);
+  let isDark=currentMode==='dark';
+  let showSwatch=isDark||Math.random()<0.4;
+  let ql=$('q-label'),qt=$('q-text'),sw=$('q-swatch');
+  if(showSwatch){ ql.textContent=isDark?'Tap the matching color':'Tap this color'; qt.textContent=''; sw.classList.remove('hidden'); sw.style.background=target.hex; }
+  else { ql.textContent='Tap the correct color'; qt.textContent=target.name; sw.classList.add('hidden'); }
+  let grid=$('answers-grid'); grid.innerHTML='';
+  shuffle(pool).forEach(c=>{
+    let btn=document.createElement('button');
+    btn.className='answer-btn'; btn.style.background=c.hex;
+    if(!isDark) btn.textContent=c.name;
+    btn.addEventListener('click',()=>handleAnswer(c,target,btn),{once:true});
+    grid.appendChild(btn);
+  });
+  timerPct=100; let elapsed=0;
+  timerInterval=setInterval(()=>{
+    elapsed+=80; timerPct=Math.max(0,100-(elapsed/roundTime)*100);
+    let fill=$('timer-fill'); fill.style.width=timerPct+'%';
+    fill.style.background=timerPct>50?'#3B82F6':timerPct>25?'#F59E0B':'#EF4444';
+    if(timerPct<=0){ clearInterval(timerInterval); handleTimeout(); }
+  },80);
+}
+
+function handleAnswer(chosen,target,btn){
+  if(answerLocked) return;
+  answerLocked=true; clearInterval(timerInterval); $('timer-fill').style.width='0%';
+  if(chosen.name===target.name){
+    streak++; correct++; bestStreak=Math.max(bestStreak,streak);
+    let mult=streak>=5?3:streak>=3?2:1;
+    let pts=10*mult*Math.ceil(level/2);
+    score+=pts; showScorePop('+'+pts,btn,'#22C55E'); btn.classList.add('correct');
+    if(navigator.vibrate)navigator.vibrate(20);
+    if(streak%5===0) level++;
+    updateRoundTime(); updateHUD();
+    setTimeout(()=>{btn.classList.remove('correct');answerLocked=false;nextQuestion();},350);
+  } else {
+    streak=0; btn.classList.add('wrong');
+    if(navigator.vibrate)navigator.vibrate([50,30,50]);
+    if(currentMode!=='zen'){ lives=Math.max(0,lives-1); if(lives===0){setTimeout(()=>endGame(),420);return;} }
+    updateHUD();
+    setTimeout(()=>{btn.classList.remove('wrong');answerLocked=false;nextQuestion();},420);
+  }
+  saveProgress();
+}
+function handleTimeout(){
+  if(answerLocked) return;
+  answerLocked=true; streak=0;
+  if(currentMode!=='zen'){ lives=Math.max(0,lives-1); if(lives===0){endGame();return;} }
+  updateHUD();
+  setTimeout(()=>{answerLocked=false;nextQuestion();},300);
+}
+function updateRoundTime(){ let base=currentMode==='blitz'?1600:3000; roundTime=Math.max(700,base-(level-1)*100); }
+function updateHUD(){
+  $('score-display').textContent=score.toLocaleString();
+  $('streak-display').textContent=streak;
+  $('level-display').textContent=level;
+  for(let i=0;i<5;i++){let d=$('d'+i);if(d)d.className='dot'+(streak>i?' on':'');}
+  $('combo-bonus').textContent=streak>=5?'×3 pts!':streak>=3?'×2 pts!':'';
+}
+function showScorePop(text,btn,color){
+  let pop=document.createElement('div'); pop.className='score-pop'; pop.textContent=text; pop.style.color=color;
+  let r=btn.getBoundingClientRect(); pop.style.left=(r.left+r.width/2-20)+'px'; pop.style.top=(r.top-10)+'px';
+  document.body.appendChild(pop); setTimeout(()=>pop.remove(),800);
+}
+function endGame(){
+  clearInterval(timerInterval); answerLocked=true;
+  let isNewBest=score>(bestScores[currentMode]||0)&&score>0;
+  if(isNewBest){ bestScores[currentMode]=score; }
+  $('screen-game').classList.add('hidden'); $('screen-result').classList.remove('hidden');
+  $('result-icon').textContent='💀'; $('result-title').textContent='Game over!';
+  $('result-score').textContent=score.toLocaleString();
+  $('res-level').textContent=level; $('res-streak').textContent=bestStreak;
+  $('new-best-label').classList.toggle('hidden',!isNewBest);
+  GV.Auth.updateCoins(Math.floor(score/20));
+  saveProgress();
+}
+function restartGame(){ startGame(currentMode); }
+function saveProgress(){ GV.Save.set(GAME_ID,{score,level,bestScores,savedAt:new Date().toISOString()}); }
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+let save=GV.Save.get(GAME_ID);
+if(save){ bestScores=save.bestScores||{}; }
+showSplash();
+</script>
+</body>
+</html>

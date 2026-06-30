@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Candy Match — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:#1a0a1a; padding-bottom:20px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .hud { display:flex; justify-content:space-between; align-items:center; padding:0 16px; margin-bottom:10px; }
+    .hud-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 16px; text-align:center; }
+    .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+    .hud-val { font-size:20px; font-weight:800; }
+    .goal-bar { padding:0 16px; margin-bottom:14px; }
+    .goal-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+    .goal-emoji { font-size:24px; }
+    .goal-text { flex:1; font-size:13px; color:var(--text2); }
+    .goal-progress { font-size:14px; font-weight:700; }
+    #board-wrap { display:flex; justify-content:center; padding:0 12px; }
+    #board {
+      display:grid; gap:4px;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:16px; padding:8px;
+      touch-action:none;
+    }
+    .cell {
+      width:40px; height:40px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px; cursor:pointer; user-select:none;
+      transition:transform .12s;
+      position:relative;
+    }
+    .cell.selected { transform:scale(1.15); box-shadow:0 0 0 3px #fff inset; }
+    .cell.matched { animation:matchPop .3s ease forwards; }
+    .cell.dropping { animation:dropIn .25s ease; }
+    @keyframes matchPop { 0%{transform:scale(1);opacity:1;} 100%{transform:scale(0);opacity:0;} }
+    @keyframes dropIn { 0%{transform:translateY(-40px);} 100%{transform:translateY(0);} }
+    .moves-low { color:#EF4444 !important; }
+    #overlay {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:16px;
+      background:rgba(10,0,10,.9); padding:24px; z-index:50;
+    }
+    .ov-emoji { font-size:64px; }
+    .ov-title { font-size:26px; font-weight:800; }
+    .ov-stars { font-size:32px; }
+    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#EC4899; color:#fff; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">🍬 Candy Match</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div class="hud">
+  <div class="hud-box"><div class="hud-label">Score</div><div class="hud-val" id="score-display">0</div></div>
+  <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level-display">1</div></div>
+  <div class="hud-box"><div class="hud-label">Moves</div><div class="hud-val" id="moves-display">20</div></div>
+</div>
+
+<div class="goal-bar">
+  <div class="goal-card">
+    <div class="goal-emoji" id="goal-emoji">🍓</div>
+    <div class="goal-text">Collect <span id="goal-target">15</span> to clear level</div>
+    <div class="goal-progress" id="goal-progress">0/15</div>
+  </div>
+</div>
+
+<div id="board-wrap"><div id="board"></div></div>
+
+<div id="overlay" class="hidden">
+  <div class="ov-emoji" id="ov-emoji">🎉</div>
+  <div class="ov-title" id="ov-title">Level Complete!</div>
+  <div class="ov-stars" id="ov-stars">⭐⭐⭐</div>
+  <button class="play-btn" onclick="nextLevel()" id="ov-btn">Next Level →</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='candyMatch';
+const CANDIES=[
+  {emoji:'🍓',color:'#EF4444'},
+  {emoji:'🍋',color:'#EAB308'},
+  {emoji:'🍇',color:'#A855F7'},
+  {emoji:'🍊',color:'#F97316'},
+  {emoji:'💚',color:'#22C55E'},
+  {emoji:'🍬',color:'#EC4899'},
+];
+const SIZE=7;
+let grid=[], score=0, level=1, moves=20, goalTarget=15, goalCount=0, goalCandyIdx=0;
+let selected=null, busy=false;
+
+function $(id){return document.getElementById(id);}
+
+function randCandy(){ return Math.floor(Math.random()*CANDIES.length); }
+
+function buildGrid(){
+  grid=[];
+  for(let r=0;r<SIZE;r++){
+    let row=[];
+    for(let c=0;c<SIZE;c++){
+      let v;
+      do { v=randCandy(); row[c]=v; } while(c>=2&&row[c-1]===v&&row[c-2]===v);
+      row[c]=v;
+    }
+    grid.push(row);
+  }
+  // ensure no initial matches by simple rebuild
+  let attempts=0;
+  while(findMatches().length>0&&attempts<50){
+    let matches=findMatches();
+    matches.forEach(([r,c])=>{ grid[r][c]=randCandy(); });
+    attempts++;
+  }
+}
+
+function findMatches(){
+  let matched=[];
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE-2;c++){
+      if(grid[r][c]!==-1&&grid[r][c]===grid[r][c+1]&&grid[r][c]===grid[r][c+2]){
+        matched.push([r,c],[r,c+1],[r,c+2]);
+      }
+    }
+  }
+  for(let c=0;c<SIZE;c++){
+    for(let r=0;r<SIZE-2;r++){
+      if(grid[r][c]!==-1&&grid[r][c]===grid[r+1][c]&&grid[r][c]===grid[r+2][c]){
+        matched.push([r,c],[r+1,c],[r+2,c]);
+      }
+    }
+  }
+  let uniq=[]; let seen=new Set();
+  matched.forEach(([r,c])=>{ let k=r+'_'+c; if(!seen.has(k)){seen.add(k);uniq.push([r,c]);} });
+  return uniq;
+}
+
+function renderBoard(){
+  let board=$('board');
+  let cellSize=Math.min(40, Math.floor((Math.min(window.innerWidth,480)-40)/SIZE));
+  board.style.gridTemplateColumns=`repeat(${SIZE}, ${cellSize}px)`;
+  board.innerHTML='';
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      let v=grid[r][c];
+      let cell=document.createElement('div');
+      cell.className='cell';
+      cell.style.width=cellSize+'px'; cell.style.height=cellSize+'px';
+      cell.style.fontSize=Math.floor(cellSize*0.6)+'px';
+      if(v>=0){ cell.textContent=CANDIES[v].emoji; cell.style.background=CANDIES[v].color+'22'; }
+      cell.dataset.r=r; cell.dataset.c=c;
+      cell.onclick=()=>onCellClick(r,c,cell);
+      board.appendChild(cell);
+    }
+  }
+}
+
+function onCellClick(r,c,el){
+  if(busy||moves<=0) return;
+  if(!selected){ selected={r,c,el}; el.classList.add('selected'); return; }
+  if(selected.r===r&&selected.c===c){ el.classList.remove('selected'); selected=null; return; }
+  let dr=Math.abs(selected.r-r), dc=Math.abs(selected.c-c);
+  if(dr+dc===1){
+    swap(selected.r,selected.c,r,c);
+  }
+  selected.el.classList.remove('selected'); selected=null;
+}
+
+function swap(r1,c1,r2,c2){
+  busy=true;
+  [grid[r1][c1],grid[r2][c2]]=[grid[r2][c2],grid[r1][c1]];
+  let matches=findMatches();
+  if(matches.length===0){
+    [grid[r1][c1],grid[r2][c2]]=[grid[r2][c2],grid[r1][c1]];
+    renderBoard();
+    busy=false;
+    return;
+  }
+  moves--; updateHUD();
+  renderBoard();
+  setTimeout(()=>processMatches(),150);
+}
+
+function processMatches(){
+  let matches=findMatches();
+  if(matches.length===0){ busy=false; checkLevelEnd(); renderBoard(); return; }
+  let comboMult=matches.length>6?2:1;
+  matches.forEach(([r,c])=>{
+    if(grid[r][c]===goalCandyIdx){ goalCount++; }
+    score+=10*comboMult;
+    grid[r][c]=-1;
+  });
+  playMatchSound();
+  if(navigator.vibrate) navigator.vibrate(20);
+  updateGoal(); updateHUD();
+  renderBoard();
+  setTimeout(()=>{ dropCandies(); },200);
+}
+
+function dropCandies(){
+  for(let c=0;c<SIZE;c++){
+    let col=[];
+    for(let r=SIZE-1;r>=0;r--){ if(grid[r][c]!==-1) col.push(grid[r][c]); }
+    while(col.length<SIZE) col.push(randCandy());
+    for(let r=SIZE-1;r>=0;r--){ grid[r][c]=col[SIZE-1-r]; }
+  }
+  renderBoard();
+  setTimeout(()=>{
+    let more=findMatches();
+    if(more.length>0){ processMatches(); } else { busy=false; checkLevelEnd(); }
+  },200);
+}
+
+function updateGoal(){
+  $('goal-progress').textContent=Math.min(goalCount,goalTarget)+'/'+goalTarget;
+  if(goalCount>=goalTarget) $('goal-progress').style.color='#22C55E';
+}
+
+function updateHUD(){
+  $('score-display').textContent=score.toLocaleString();
+  $('level-display').textContent=level;
+  $('moves-display').textContent=moves;
+  $('moves-display').classList.toggle('moves-low', moves<=5);
+}
+
+function checkLevelEnd(){
+  if(goalCount>=goalTarget){ showWin(); return; }
+  if(moves<=0){ showLose(); return; }
+}
+
+function showWin(){
+  let stars = moves>10?3:moves>4?2:1;
+  $('overlay').classList.remove('hidden');
+  $('ov-emoji').textContent='🎉';
+  $('ov-title').textContent='Level '+level+' Complete!';
+  $('ov-stars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  $('ov-btn').textContent='Next Level →'; $('ov-btn').onclick=nextLevel;
+  GV.Auth.updateCoins(10*stars);
+  saveProgress();
+}
+function showLose(){
+  $('overlay').classList.remove('hidden');
+  $('ov-emoji').textContent='😢';
+  $('ov-title').textContent='Out of moves!';
+  $('ov-stars').textContent='Try again?';
+  $('ov-btn').textContent='Retry Level'; $('ov-btn').onclick=retryLevel;
+  saveProgress();
+}
+
+function nextLevel(){
+  level++; moves=20+Math.floor(level/3);
+  goalTarget=12+level*2;
+  goalCandyIdx=randCandy();
+  goalCount=0;
+  $('goal-emoji').textContent=CANDIES[goalCandyIdx].emoji;
+  $('goal-target').textContent=goalTarget;
+  $('overlay').classList.add('hidden');
+  buildGrid(); renderBoard(); updateHUD(); updateGoal();
+  saveProgress();
+}
+function retryLevel(){
+  moves=20+Math.floor(level/3); goalCount=0;
+  $('overlay').classList.add('hidden');
+  buildGrid(); renderBoard(); updateHUD(); updateGoal();
+}
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{score,level,moves,goalTarget,goalCount,goalCandyIdx,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+let audioCtx=null;
+function playMatchSound(){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    [660,880,1100].forEach((f,i)=>{
+      setTimeout(()=>{
+        let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+        o.connect(g);g.connect(audioCtx.destination);
+        o.frequency.value=f;o.type='sine';
+        g.gain.setValueAtTime(0.15,audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.15);
+        o.start();o.stop(audioCtx.currentTime+0.15);
+      },i*50);
+    });
+  }catch(e){}
+}
+
+/* INIT — load save or fresh start */
+let save=GV.Save.get(GAME_ID);
+if(save){
+  score=save.score||0; level=save.level||1; moves=save.moves||20;
+  goalTarget=save.goalTarget||15; goalCount=save.goalCount||0; goalCandyIdx=save.goalCandyIdx||0;
+} else {
+  goalCandyIdx=randCandy();
+}
+$('goal-emoji').textContent=CANDIES[goalCandyIdx].emoji;
+$('goal-target').textContent=goalTarget;
+buildGrid(); renderBoard(); updateHUD(); updateGoal();
+</script>
+</body>
+</html>

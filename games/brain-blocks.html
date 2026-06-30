@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Brain Blocks — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:#0a0a18; padding-bottom:24px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .hud { display:flex; justify-content:space-between; padding:0 16px; margin-bottom:16px; gap:10px; }
+    .hud-box { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center; }
+    .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+    .hud-val { font-size:18px; font-weight:800; }
+    .board-wrap { display:flex; justify-content:center; padding:0 16px; }
+    #puzzle-board {
+      display:grid; gap:6px; background:var(--surface); border:1px solid var(--border);
+      border-radius:18px; padding:10px;
+    }
+    .tile {
+      border-radius:10px; display:flex; align-items:center; justify-content:center;
+      font-size:22px; font-weight:800; color:#fff; cursor:pointer;
+      transition:transform .15s; background:linear-gradient(135deg,#8B5CF6,#6D28D9);
+      box-shadow:0 3px 10px rgba(139,92,246,.3);
+    }
+    .tile:active { transform:scale(.93); }
+    .tile.empty { background:transparent; box-shadow:none; cursor:default; }
+    .controls { padding:18px 16px 0; display:flex; gap:10px; }
+    .ctrl-btn { flex:1; height:46px; border-radius:12px; border:1px solid var(--border2); background:var(--surface); color:var(--text); font-size:14px; font-weight:600; cursor:pointer; }
+    #win-overlay {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:16px;
+      background:rgba(10,0,20,.92); padding:24px;
+    }
+    .win-emoji { font-size:60px; }
+    .win-title { font-size:26px; font-weight:800; }
+    .win-stats { display:flex; gap:24px; }
+    .ws-item { text-align:center; }
+    .ws-n { font-size:22px; font-weight:800; color:#8B5CF6; }
+    .ws-l { font-size:11px; color:var(--text3); text-transform:uppercase; }
+    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#8B5CF6; color:#fff; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">🧩 Brain Blocks</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div class="hud">
+  <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level-display">1</div></div>
+  <div class="hud-box"><div class="hud-label">Moves</div><div class="hud-val" id="moves-display">0</div></div>
+  <div class="hud-box"><div class="hud-label">Time</div><div class="hud-val" id="time-display">0:00</div></div>
+</div>
+
+<div class="board-wrap"><div id="puzzle-board"></div></div>
+
+<div class="controls">
+  <button class="ctrl-btn" onclick="shuffleBoard()">🔀 Shuffle</button>
+  <button class="ctrl-btn" onclick="showHint()">💡 Hint</button>
+</div>
+
+<div id="win-overlay" class="hidden">
+  <div class="win-emoji">🎉</div>
+  <div class="win-title">Solved!</div>
+  <div class="win-stats">
+    <div class="ws-item"><div class="ws-n" id="win-moves">0</div><div class="ws-l">Moves</div></div>
+    <div class="ws-item"><div class="ws-n" id="win-time">0:00</div><div class="ws-l">Time</div></div>
+  </div>
+  <button class="play-btn" onclick="nextLevel()">Next Level →</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='puzzle';
+let level=1, gridSize=3, tiles=[], moves=0, startTime=Date.now(), timerInterval=null, emptyIdx=0;
+
+function $(id){return document.getElementById(id);}
+
+function initLevel(fromSave){
+  gridSize=Math.min(5, 3+Math.floor((level-1)/3));
+  if(!fromSave){
+    tiles=[...Array(gridSize*gridSize).keys()];
+    emptyIdx=tiles.length-1;
+    moves=0;
+    startTime=Date.now();
+    shuffleBoard(true);
+  }
+  renderBoard();
+  updateHUD();
+  startTimer();
+}
+
+function renderBoard(){
+  let board=$('puzzle-board');
+  let cellSize=Math.min(76, Math.floor((Math.min(window.innerWidth,480)-60)/gridSize));
+  board.style.gridTemplateColumns=`repeat(${gridSize}, ${cellSize}px)`;
+  board.innerHTML='';
+  tiles.forEach((val,idx)=>{
+    let tile=document.createElement('div');
+    tile.className='tile'+(val===tiles.length-1?' empty':'');
+    tile.style.width=cellSize+'px'; tile.style.height=cellSize+'px';
+    tile.style.fontSize=Math.floor(cellSize*0.32)+'px';
+    if(val!==tiles.length-1) tile.textContent=val+1;
+    tile.onclick=()=>tryMove(idx);
+    board.appendChild(tile);
+  });
+}
+
+function tryMove(idx){
+  let size=gridSize;
+  let r=Math.floor(idx/size), c=idx%size;
+  let er=Math.floor(emptyIdx/size), ec=emptyIdx%size;
+  if((Math.abs(r-er)===1&&c===ec)||(Math.abs(c-ec)===1&&r===er)){
+    [tiles[idx],tiles[emptyIdx]]=[tiles[emptyIdx],tiles[idx]];
+    emptyIdx=idx;
+    moves++;
+    updateHUD();
+    renderBoard();
+    playClick();
+    if(checkWin()) onWin();
+    saveProgress();
+  }
+}
+
+function checkWin(){
+  for(let i=0;i<tiles.length-1;i++){ if(tiles[i]!==i) return false; }
+  return true;
+}
+
+function shuffleBoard(silent){
+  let size=gridSize;
+  emptyIdx=tiles.length-1;
+  for(let i=0;i<size*size*30;i++){
+    let er=Math.floor(emptyIdx/size), ec=emptyIdx%size;
+    let dirs=[];
+    if(er>0) dirs.push(emptyIdx-size);
+    if(er<size-1) dirs.push(emptyIdx+size);
+    if(ec>0) dirs.push(emptyIdx-1);
+    if(ec<size-1) dirs.push(emptyIdx+1);
+    let target=dirs[Math.floor(Math.random()*dirs.length)];
+    [tiles[emptyIdx],tiles[target]]=[tiles[target],tiles[emptyIdx]];
+    emptyIdx=target;
+  }
+  if(!silent){ moves=0; startTime=Date.now(); renderBoard(); updateHUD(); saveProgress(); }
+}
+
+function showHint(){
+  let size=gridSize;
+  for(let i=0;i<tiles.length-1;i++){
+    if(tiles[i]!==i){
+      let board=$('puzzle-board');
+      let correctIdx=tiles.indexOf(i);
+      let el=board.children[correctIdx];
+      el.style.boxShadow='0 0 0 3px #EAB308';
+      setTimeout(()=>{ el.style.boxShadow=''; }, 1200);
+      break;
+    }
+  }
+}
+
+function updateHUD(){
+  $('level-display').textContent=level;
+  $('moves-display').textContent=moves;
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{
+    let elapsed=Math.floor((Date.now()-startTime)/1000);
+    let m=Math.floor(elapsed/60), s=elapsed%60;
+    $('time-display').textContent=m+':'+String(s).padStart(2,'0');
+  },1000);
+}
+
+function onWin(){
+  clearInterval(timerInterval);
+  let elapsed=Math.floor((Date.now()-startTime)/1000);
+  let m=Math.floor(elapsed/60), s=elapsed%60;
+  $('win-moves').textContent=moves;
+  $('win-time').textContent=m+':'+String(s).padStart(2,'0');
+  $('win-overlay').classList.remove('hidden');
+  GV.Auth.updateCoins(20);
+  if(navigator.vibrate) navigator.vibrate([50,30,50,30,100]);
+  saveProgress();
+}
+
+function nextLevel(){
+  level++;
+  $('win-overlay').classList.add('hidden');
+  initLevel(false);
+  saveProgress();
+}
+
+let audioCtx=null;
+function playClick(){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=500;o.type='sine';
+    g.gain.setValueAtTime(0.15,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);
+    o.start();o.stop(audioCtx.currentTime+0.1);
+  }catch(e){}
+}
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{level,gridSize,tiles,emptyIdx,moves,startTime,score:moves,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save){
+  level=save.level||1; gridSize=save.gridSize||3;
+  tiles=save.tiles||[]; emptyIdx=save.emptyIdx??tiles.length-1;
+  moves=save.moves||0; startTime=save.startTime||Date.now();
+  if(tiles.length>0){ renderBoard(); updateHUD(); startTimer(); }
+  else { initLevel(false); }
+} else {
+  initLevel(false);
+}
+</script>
+</body>
+</html>

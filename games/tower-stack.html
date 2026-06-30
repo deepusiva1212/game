@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Tower Stack — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:linear-gradient(180deg,#06151f,#0a0a0a); overflow:hidden; touch-action:none; }
+    #canvas { display:block; width:100%; max-width:480px; margin:0 auto; }
+    .game-ui { position:fixed; top:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; padding:14px 16px; text-align:center; pointer-events:none; }
+    .ui-score { font-size:42px; font-weight:800; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5); }
+    #back-home { position:fixed; top:10px; left:10px; z-index:100; }
+    .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(5,10,20,.88); padding:24px; }
+    .ov-emoji { font-size:60px; }
+    .ov-title { font-size:26px; font-weight:800; color:#fff; }
+    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#06B6D4; color:#fff; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="game-ui"><div class="ui-score" id="ui-score">0</div></div>
+<button id="back-home" class="back-btn" onclick="saveAndExit()" style="background:rgba(0,0,0,.5);color:#fff;border-color:rgba(255,255,255,.3);">← Home</button>
+
+<div id="start-overlay" class="overlay">
+  <div class="ov-emoji">🏗️</div>
+  <div class="ov-title">Tower Stack</div>
+  <div style="color:#ddd;font-size:14px;text-align:center;">Tap to drop the block. Stack as high as you can — precision matters!</div>
+  <div id="best-display" style="color:#06B6D4;font-weight:700;"></div>
+  <button class="play-btn" onclick="startGame()">▶ Play</button>
+</div>
+
+<div id="gameover-overlay" class="overlay hidden">
+  <div class="ov-emoji">📉</div>
+  <div class="ov-title">Tower Fell!</div>
+  <div style="font-size:40px;font-weight:800;color:#06B6D4;" id="go-score">0</div>
+  <div id="go-best" style="color:var(--text2);font-size:13px;"></div>
+  <button class="play-btn" onclick="startGame()">▶ Play Again</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.3);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='tower';
+const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
+let W,H,dpr;
+
+function resize(){
+  let mw=Math.min(window.innerWidth,480);
+  dpr=window.devicePixelRatio||1;
+  W=mw; H=window.innerHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+}
+resize(); window.addEventListener('resize',resize);
+
+let blocks, current, score=0, best=0, state='idle', cameraY=0, raf;
+const BLOCK_H=32;
+const COLORS=['#06B6D4','#0EA5E9','#3B82F6','#6366F1','#8B5CF6','#A855F7'];
+
+function initGame(){
+  blocks=[{x:W/2-60,w:120,y:H-100,color:COLORS[0]}];
+  score=0; cameraY=0;
+  spawnBlock();
+}
+
+function spawnBlock(){
+  let lastBlock=blocks[blocks.length-1];
+  let dir=Math.random()>0.5?1:-1;
+  let w=lastBlock.w;
+  current={
+    x: dir>0 ? -w : W,
+    w, y: lastBlock.y-BLOCK_H,
+    vx: dir>0?4.5:-4.5,
+    color: COLORS[blocks.length%COLORS.length]
+  };
+}
+
+function drop(){
+  if(state!=='playing') return;
+  let lastBlock=blocks[blocks.length-1];
+  let overlapStart=Math.max(current.x,lastBlock.x);
+  let overlapEnd=Math.min(current.x+current.w,lastBlock.x+lastBlock.w);
+  let overlapW=overlapEnd-overlapStart;
+
+  if(overlapW<=4){ gameOver(); return; }
+
+  let perfect = Math.abs(overlapW-current.w)<3 && Math.abs(overlapW-lastBlock.w)<3;
+  blocks.push({x:overlapStart,w:overlapW,y:current.y,color:current.color});
+  score++;
+  if(perfect){ score+=2; spawnParticlesPerfect(); }
+  playDrop(perfect);
+  updateUI();
+  if(navigator.vibrate)navigator.vibrate(perfect?[20,10,20]:15);
+  if(score%5===0) cameraY+=BLOCK_H*5;
+  spawnBlock();
+}
+
+let particles=[];
+function spawnParticlesPerfect(){
+  let lastBlock=blocks[blocks.length-1];
+  for(let i=0;i<15;i++) particles.push({x:lastBlock.x+lastBlock.w/2,y:lastBlock.y-cameraY,vx:(Math.random()-0.5)*6,vy:-Math.random()*6,life:1,color:'#FCD34D'});
+}
+
+canvas.addEventListener('pointerdown',e=>{ e.preventDefault(); drop(); });
+document.addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault();drop();} });
+
+function update(){
+  current.x+=current.vx;
+  if(current.x<-current.w||current.x>W) current.vx*=-1;
+  cameraY+=(blocks.length*BLOCK_H*0.6 - H*0.4 - cameraY)*0.08;
+  particles=particles.filter(p=>{ p.x+=p.vx;p.y+=p.vy;p.vy+=0.3;p.life-=0.04; return p.life>0; });
+}
+
+function draw(){
+  let sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#06151f'); sky.addColorStop(1,'#0a0a0a');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  blocks.forEach((b,i)=>{
+    let by=b.y-cameraY;
+    if(by>H+50||by<-50) return;
+    ctx.fillStyle=b.color;
+    ctx.beginPath(); ctx.roundRect(b.x,by,b.w,BLOCK_H-2,4); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.15)';
+    ctx.fillRect(b.x,by,b.w,6);
+  });
+
+  let cy=current.y-cameraY;
+  ctx.fillStyle=current.color;
+  ctx.beginPath(); ctx.roundRect(current.x,cy,current.w,BLOCK_H-2,4); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.2)';
+  ctx.fillRect(current.x,cy,current.w,6);
+
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life; ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+}
+
+function loop(){
+  if(state!=='playing') return;
+  update(); draw();
+  raf=requestAnimationFrame(loop);
+}
+
+function updateUI(){ document.getElementById('ui-score').textContent=score; }
+
+function startGame(){
+  document.getElementById('start-overlay').classList.add('hidden');
+  document.getElementById('gameover-overlay').classList.add('hidden');
+  initGame();
+  state='playing';
+  updateUI();
+  loop();
+}
+
+function gameOver(){
+  state='idle';
+  cancelAnimationFrame(raf);
+  best=Math.max(best,score);
+  document.getElementById('go-score').textContent=score;
+  document.getElementById('go-best').textContent='Best: '+best;
+  document.getElementById('gameover-overlay').classList.remove('hidden');
+  GV.Auth.updateCoins(Math.floor(score/2));
+  playFall();
+  if(navigator.vibrate)navigator.vibrate([50,30,50]);
+  saveProgress();
+}
+
+let audioCtx=null;
+function tone(f,type,d,v=0.15){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=f;o.type=type;
+    g.gain.setValueAtTime(v,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);
+    o.start();o.stop(audioCtx.currentTime+d);
+  }catch(e){}
+}
+function playDrop(perfect){ tone(perfect?900:500,'sine',0.12); }
+function playFall(){ tone(150,'sawtooth',0.4,0.2); }
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{best,score,level:1,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ cancelAnimationFrame(raf); state='idle'; saveProgress(); window.location.href='../index.html'; }
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save){ best=save.best||0; document.getElementById('best-display').textContent='🏆 Best: '+best; }
+</script>
+</body>
+</html>

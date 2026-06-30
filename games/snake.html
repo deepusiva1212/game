@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Snake Legends — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:#0a140a; overflow:hidden; touch-action:none; }
+    #canvas { display:block; width:100%; max-width:480px; margin:0 auto; }
+    .game-ui { position:fixed; top:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; padding:10px 16px; display:flex; justify-content:space-between; }
+    .ui-pill { background:rgba(0,0,0,.5); color:#fff; padding:6px 14px; border-radius:99px; font-size:13px; font-weight:700; }
+    #back-home { position:fixed; top:10px; left:10px; z-index:100; }
+    .dpad { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); width:160px; height:160px; z-index:50; }
+    .dpad-btn { position:absolute; width:54px; height:54px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff; }
+    .dpad-up { top:0; left:53px; } .dpad-down { bottom:0; left:53px; }
+    .dpad-left { left:0; top:53px; } .dpad-right { right:0; top:53px; }
+    .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(0,10,0,.88); padding:24px; }
+    .ov-emoji { font-size:60px; }
+    .ov-title { font-size:26px; font-weight:800; color:#fff; }
+    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#84CC16; color:#0a140a; font-size:16px; font-weight:700; }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="game-ui">
+  <div class="ui-pill" id="ui-score">Score: 0</div>
+  <div class="ui-pill" id="ui-best">Best: 0</div>
+</div>
+<button id="back-home" class="back-btn" onclick="saveAndExit()" style="background:rgba(0,0,0,.5);color:#fff;border-color:rgba(255,255,255,.3);">← Home</button>
+
+<div class="dpad" id="dpad">
+  <div class="dpad-btn dpad-up" onclick="setDir(0,-1)">⬆️</div>
+  <div class="dpad-btn dpad-down" onclick="setDir(0,1)">⬇️</div>
+  <div class="dpad-btn dpad-left" onclick="setDir(-1,0)">⬅️</div>
+  <div class="dpad-btn dpad-right" onclick="setDir(1,0)">➡️</div>
+</div>
+
+<div id="start-overlay" class="overlay">
+  <div class="ov-emoji">🐍</div>
+  <div class="ov-title">Snake Legends</div>
+  <div style="color:#ddd;font-size:14px;text-align:center;">Swipe or use D-pad to move. Eat food, avoid your own tail!</div>
+  <button class="play-btn" onclick="startGame()">▶ Play</button>
+</div>
+
+<div id="gameover-overlay" class="overlay hidden">
+  <div class="ov-emoji">💀</div>
+  <div class="ov-title">Game Over</div>
+  <div style="font-size:36px;font-weight:800;color:#84CC16;" id="go-score">0</div>
+  <button class="play-btn" onclick="startGame()">▶ Play Again</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.3);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='snake';
+const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
+let W,H,dpr,cell=20,cols,rows;
+
+function resize(){
+  let mw=Math.min(window.innerWidth,480);
+  dpr=window.devicePixelRatio||1;
+  W=mw; H=Math.min(window.innerHeight,mw*1.3);
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  cols=Math.floor(W/cell); rows=Math.floor(H/cell);
+}
+resize(); window.addEventListener('resize',resize);
+
+let snake, dir, nextDir, food, score=0, best=0, speed=140, lastMove=0, state='idle', raf;
+
+function initGame(){
+  snake=[{x:5,y:5},{x:4,y:5},{x:3,y:5}];
+  dir={x:1,y:0}; nextDir={x:1,y:0};
+  spawnFood();
+  score=0; speed=140;
+}
+
+function spawnFood(){
+  let valid=false, fx,fy;
+  while(!valid){
+    fx=Math.floor(Math.random()*cols); fy=Math.floor(Math.random()*rows);
+    valid=!snake.some(s=>s.x===fx&&s.y===fy);
+  }
+  food={x:fx,y:fy};
+}
+
+function setDir(x,y){
+  if(dir.x===-x&&dir.y===-y) return;
+  nextDir={x,y};
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowUp')setDir(0,-1);
+  if(e.key==='ArrowDown')setDir(0,1);
+  if(e.key==='ArrowLeft')setDir(-1,0);
+  if(e.key==='ArrowRight')setDir(1,0);
+});
+
+let touchStart=null;
+canvas.addEventListener('touchstart',e=>{ touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY}; });
+canvas.addEventListener('touchend',e=>{
+  if(!touchStart) return;
+  let dx=e.changedTouches[0].clientX-touchStart.x;
+  let dy=e.changedTouches[0].clientY-touchStart.y;
+  if(Math.abs(dx)>Math.abs(dy)){ setDir(dx>0?1:-1,0); } else { setDir(0,dy>0?1:-1); }
+  touchStart=null;
+});
+
+function startGame(){
+  document.getElementById('start-overlay').classList.add('hidden');
+  document.getElementById('gameover-overlay').classList.add('hidden');
+  initGame();
+  state='playing';
+  lastMove=performance.now();
+  loop();
+}
+
+function update(ts){
+  if(ts-lastMove<speed) return;
+  lastMove=ts;
+  dir=nextDir;
+  let head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(head.x<0||head.x>=cols||head.y<0||head.y>=rows||snake.some(s=>s.x===head.x&&s.y===head.y)){
+    gameOver(); return;
+  }
+  snake.unshift(head);
+  if(head.x===food.x&&head.y===food.y){
+    score+=10; spawnFood(); playEat();
+    if(navigator.vibrate)navigator.vibrate(20);
+    speed=Math.max(70,speed-2);
+    GV.Auth.updateCoins(1);
+  } else {
+    snake.pop();
+  }
+}
+
+function draw(){
+  ctx.fillStyle='#0a140a'; ctx.fillRect(0,0,W,H);
+  /* grid */
+  ctx.strokeStyle='rgba(255,255,255,0.03)';
+  for(let i=0;i<=cols;i++){ ctx.beginPath();ctx.moveTo(i*cell,0);ctx.lineTo(i*cell,rows*cell);ctx.stroke(); }
+  for(let j=0;j<=rows;j++){ ctx.beginPath();ctx.moveTo(0,j*cell);ctx.lineTo(cols*cell,j*cell);ctx.stroke(); }
+
+  /* food */
+  ctx.fillStyle='#EF4444';
+  ctx.beginPath(); ctx.arc(food.x*cell+cell/2,food.y*cell+cell/2,cell*0.35,0,Math.PI*2); ctx.fill();
+
+  /* snake */
+  snake.forEach((s,i)=>{
+    let t=i/snake.length;
+    ctx.fillStyle=i===0?'#84CC16':`hsl(${90-t*20},60%,${45-t*15}%)`;
+    ctx.beginPath();
+    ctx.roundRect(s.x*cell+1,s.y*cell+1,cell-2,cell-2,6);
+    ctx.fill();
+  });
+  /* eyes on head */
+  let h=snake[0];
+  ctx.fillStyle='#0a140a';
+  let ex=h.x*cell+cell/2+dir.x*4, ey=h.y*cell+cell/2+dir.y*4;
+  ctx.beginPath(); ctx.arc(ex-3,ey-3,2,0,Math.PI*2); ctx.arc(ex+3,ey+3,2,0,Math.PI*2); ctx.fill();
+
+  document.getElementById('ui-score').textContent='Score: '+score;
+}
+
+function loop(ts){
+  if(state!=='playing') return;
+  update(ts||performance.now());
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+
+function gameOver(){
+  state='idle';
+  cancelAnimationFrame(raf);
+  best=Math.max(best,score);
+  document.getElementById('ui-best').textContent='Best: '+best;
+  document.getElementById('go-score').textContent=score;
+  document.getElementById('gameover-overlay').classList.remove('hidden');
+  playDie();
+  if(navigator.vibrate)navigator.vibrate([50,30,50]);
+  saveProgress();
+}
+
+let audioCtx=null;
+function tone(f,type,d,v=0.15){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=f;o.type=type;
+    g.gain.setValueAtTime(v,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);
+    o.start();o.stop(audioCtx.currentTime+d);
+  }catch(e){}
+}
+function playEat(){ tone(700,'sine',0.1); }
+function playDie(){ tone(150,'sawtooth',0.4,0.25); }
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{best,score,level:1,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ cancelAnimationFrame(raf); state='idle'; saveProgress(); window.location.href='../index.html'; }
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save){ best=save.best||0; }
+document.getElementById('ui-best').textContent='Best: '+best;
+</script>
+</body>
+</html>

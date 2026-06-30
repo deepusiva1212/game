@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Happy Farm — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:linear-gradient(180deg,#0a1a0a,#0a0a0a); padding-bottom:24px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    .hud { display:flex; justify-content:space-between; padding:0 16px; margin-bottom:16px; gap:8px; }
+    .hud-box { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center; }
+    .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
+    .hud-val { font-size:17px; font-weight:800; }
+    .farm-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 16px; }
+    .plot {
+      aspect-ratio:1; background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      cursor:pointer; position:relative; transition:transform .1s;
+    }
+    .plot:active { transform:scale(.94); }
+    .plot.empty { background:repeating-linear-gradient(45deg,#1a1a0a,#1a1a0a 4px,#141408 4px,#141408 8px); }
+    .plot-emoji { font-size:28px; }
+    .plot-timer { font-size:9px; color:var(--text3); margin-top:2px; }
+    .plot-progress {
+      position:absolute; bottom:4px; left:6px; right:6px; height:3px;
+      background:var(--surface3); border-radius:99px; overflow:hidden;
+    }
+    .plot-progress-fill { height:100%; background:#22C55E; border-radius:99px; }
+    .ready-badge { position:absolute; top:-4px; right:-4px; font-size:16px; animation:bounce 1s infinite; }
+    @keyframes bounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+
+    .shop-section { padding:20px 16px 0; }
+    .shop-grid { display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; }
+    .crop-card {
+      min-width:90px; background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:10px; text-align:center; cursor:pointer; flex-shrink:0;
+    }
+    .crop-card.selected { border-color:#22C55E; background:rgba(34,197,94,.1); }
+    .crop-icon { font-size:26px; }
+    .crop-name { font-size:11px; font-weight:600; margin-top:4px; }
+    .crop-info { font-size:10px; color:var(--text3); }
+    .sell-popup {
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+      background:var(--surface2); border:1px solid var(--border2); padding:8px 16px;
+      border-radius:99px; font-size:13px; font-weight:700; color:#EAB308; opacity:0; transition:opacity .3s; pointer-events:none;
+    }
+    .sell-popup.show { opacity:1; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <button class="back-btn" onclick="saveAndExit()">← Home</button>
+  <div style="font-weight:700;">🌾 Happy Farm</div>
+  <div style="width:70px;"></div>
+</div>
+
+<div class="hud">
+  <div class="hud-box"><div class="hud-label">🪙 Coins</div><div class="hud-val" id="coins-display">0</div></div>
+  <div class="hud-box"><div class="hud-label">Level</div><div class="hud-val" id="level-display">1</div></div>
+  <div class="hud-box"><div class="hud-label">Harvested</div><div class="hud-val" id="harvest-display">0</div></div>
+</div>
+
+<div class="farm-grid" id="farm-grid"></div>
+
+<div class="shop-section">
+  <div style="font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Select Crop to Plant</div>
+  <div class="shop-grid" id="shop-grid"></div>
+</div>
+
+<div class="sell-popup" id="sell-popup"></div>
+
+<script src="../js/core.js"></script>
+<script>
+const GAME_ID='farm';
+const CROPS=[
+  {id:'wheat',name:'Wheat',icon:'🌾',growTime:8,cost:5,sell:15},
+  {id:'carrot',name:'Carrot',icon:'🥕',growTime:12,cost:8,sell:25},
+  {id:'corn',name:'Corn',icon:'🌽',growTime:18,cost:15,sell:45},
+  {id:'tomato',name:'Tomato',icon:'🍅',growTime:25,cost:25,sell:75},
+  {id:'pumpkin',name:'Pumpkin',icon:'🎃',growTime:40,cost:50,sell:150},
+];
+const GRID_SIZE=12;
+let plots=[], coins=50, level=1, harvested=0, selectedCrop='wheat';
+
+function $(id){return document.getElementById(id);}
+
+function initPlots(){
+  if(plots.length===0){
+    plots=Array.from({length:GRID_SIZE},()=>({state:'empty',cropId:null,plantedAt:null}));
+  }
+}
+
+function renderShop(){
+  let shop=$('shop-grid');
+  shop.innerHTML=CROPS.map(c=>`
+    <div class="crop-card${c.id===selectedCrop?' selected':''}" onclick="selectCrop('${c.id}')">
+      <div class="crop-icon">${c.icon}</div>
+      <div class="crop-name">${c.name}</div>
+      <div class="crop-info">🪙${c.cost} · ${c.growTime}s</div>
+    </div>`).join('');
+}
+
+function selectCrop(id){ selectedCrop=id; renderShop(); }
+
+function renderFarm(){
+  let grid=$('farm-grid');
+  grid.innerHTML='';
+  plots.forEach((plot,idx)=>{
+    let div=document.createElement('div');
+    let crop=CROPS.find(c=>c.id===plot.cropId);
+    if(plot.state==='empty'){
+      div.className='plot empty';
+      div.innerHTML=`<div class="plot-emoji" style="opacity:.3;">➕</div>`;
+    } else if(plot.state==='growing'){
+      let elapsed=(Date.now()-plot.plantedAt)/1000;
+      let pct=Math.min(100,(elapsed/crop.growTime)*100);
+      div.className='plot';
+      div.innerHTML=`<div class="plot-emoji">🌱</div><div class="plot-timer">${Math.max(0,Math.ceil(crop.growTime-elapsed))}s</div>
+        <div class="plot-progress"><div class="plot-progress-fill" style="width:${pct}%;"></div></div>`;
+      if(pct>=100){ plot.state='ready'; }
+    } else if(plot.state==='ready'){
+      div.className='plot';
+      div.innerHTML=`<div class="plot-emoji">${crop.icon}</div><div class="ready-badge">✨</div>`;
+    }
+    div.onclick=()=>onPlotClick(idx);
+    grid.appendChild(div);
+  });
+}
+
+function onPlotClick(idx){
+  let plot=plots[idx];
+  if(plot.state==='empty'){
+    let crop=CROPS.find(c=>c.id===selectedCrop);
+    if(coins<crop.cost){ flashMsg('Not enough coins!'); return; }
+    coins-=crop.cost;
+    plot.state='growing'; plot.cropId=selectedCrop; plot.plantedAt=Date.now();
+    GV.Auth.updateCoins(-crop.cost);
+    updateHUD(); playPlant();
+  } else if(plot.state==='ready'){
+    let crop=CROPS.find(c=>c.id===plot.cropId);
+    coins+=crop.sell; harvested++;
+    GV.Auth.updateCoins(crop.sell);
+    flashMsg('+🪙'+crop.sell);
+    plot.state='empty'; plot.cropId=null; plot.plantedAt=null;
+    updateHUD(); playHarvest();
+    if(navigator.vibrate) navigator.vibrate(30);
+  }
+  renderFarm();
+  saveProgress();
+}
+
+function flashMsg(msg){
+  let p=$('sell-popup');
+  p.textContent=msg; p.classList.add('show');
+  setTimeout(()=>p.classList.remove('show'),1200);
+}
+
+function updateHUD(){
+  $('coins-display').textContent=coins.toLocaleString();
+  $('harvest-display').textContent=harvested;
+  level=1+Math.floor(harvested/10);
+  $('level-display').textContent=level;
+}
+
+let audioCtx=null;
+function tone(f,d,v=0.15){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=f;o.type='sine';
+    g.gain.setValueAtTime(v,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);
+    o.start();o.stop(audioCtx.currentTime+d);
+  }catch(e){}
+}
+function playPlant(){ tone(400,0.15); }
+function playHarvest(){ tone(700,0.1); setTimeout(()=>tone(900,0.15),60); }
+
+function saveProgress(){
+  GV.Save.set(GAME_ID,{coins,level,harvested,plots,selectedCrop,score:harvested,savedAt:new Date().toISOString()});
+}
+function saveAndExit(){ saveProgress(); window.location.href='../index.html'; }
+
+/* growth tick */
+setInterval(()=>{ renderFarm(); }, 1000);
+
+/* INIT */
+let save=GV.Save.get(GAME_ID);
+if(save){
+  coins=save.coins??50; level=save.level||1; harvested=save.harvested||0;
+  plots=save.plots||[]; selectedCrop=save.selectedCrop||'wheat';
+}
+initPlots();
+renderShop();
+renderFarm();
+updateHUD();
+</script>
+</body>
+</html>

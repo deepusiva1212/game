@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <title>Sky Runner — GameVerse</title>
+  <link rel="stylesheet" href="../css/global.css"/>
+  <style>
+    body { background:#0a0a1a; overflow:hidden; }
+    #canvas { display:block; width:100%; max-width:480px; margin:0 auto; touch-action:none; }
+    .game-ui { position:fixed; top:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; pointer-events:none; }
+    .hud-bar { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; }
+    .hud-score { font-size:20px; font-weight:800; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+    .hud-lives { font-size:18px; }
+    .hud-level { font-size:13px; font-weight:700; color:rgba(255,255,255,.6); }
+    .overlay {
+      position:fixed; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:16px;
+      background:rgba(0,0,10,.85); padding:24px;
+    }
+    .overlay-title { font-size:32px; font-weight:800; text-align:center; }
+    .overlay-score { font-size:48px; font-weight:800; color:#EF4444; }
+    .overlay-sub { font-size:14px; color:var(--text2); text-align:center; }
+    .play-btn {
+      width:100%; max-width:320px; height:52px; border-radius:14px;
+      border:none; background:#EF4444; color:#fff; font-size:17px; font-weight:700; cursor:pointer;
+    }
+    #back-home { position:fixed; top:12px; left:12px; z-index:100; pointer-events:all; }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="game-ui">
+  <div class="hud-bar">
+    <div class="hud-score" id="hud-score">0</div>
+    <div class="hud-level" id="hud-level">Level 1</div>
+    <div class="hud-lives" id="hud-lives">❤️❤️❤️</div>
+  </div>
+</div>
+<button id="back-home" class="back-btn" onclick="saveAndExit()">← Home</button>
+
+<!-- START OVERLAY -->
+<div id="start-overlay" class="overlay">
+  <div class="overlay-title">🏃 Sky Runner</div>
+  <div class="overlay-sub">Tap or press Space to jump. Avoid obstacles. Collect coins!</div>
+  <div id="saved-info" style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px 20px;color:#4ADE80;font-size:14px;font-weight:600;display:none;"></div>
+  <button class="play-btn" onclick="startGame()">▶ Play</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);font-size:14px;height:42px;margin-top:-8px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameover-overlay" class="overlay hidden">
+  <div class="overlay-title">💀 Game Over</div>
+  <div class="overlay-score" id="go-score">0</div>
+  <div class="overlay-sub" id="go-level">You reached Level 1</div>
+  <button class="play-btn" onclick="startGame()">▶ Play Again</button>
+  <button class="play-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);font-size:14px;height:42px;" onclick="saveAndExit()">← Back to Hub</button>
+</div>
+
+<script src="../js/core.js"></script>
+<script>
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d');
+const GAME_ID='runner';
+let W,H,dpr;
+
+function resize(){
+  let mw=Math.min(window.innerWidth,480);
+  dpr=window.devicePixelRatio||1;
+  W=mw; H=window.innerHeight;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+}
+resize(); window.addEventListener('resize',resize);
+
+/* GAME STATE */
+let state='idle', score=0, level=1, lives=3, raf=null;
+let player, obstacles, coins, particles, groundY, speed, frames, highScore=0;
+let bestLevel=1;
+
+/* PLAYER */
+function initPlayer(){
+  groundY=H*0.72;
+  player={
+    x:W*0.18, y:groundY, w:36, h:52,
+    vy:0, onGround:true, jumpCount:0,
+    color:'#3B82F6', animFrame:0
+  };
+}
+
+function initGame(fromSave=false){
+  if(!fromSave){ score=0; level=1; lives=3; speed=3.5; frames=0; }
+  obstacles=[]; coins=[]; particles=[];
+  initPlayer();
+  updateHUD();
+}
+
+function startGame(){
+  document.getElementById('start-overlay').classList.add('hidden');
+  document.getElementById('gameover-overlay').classList.add('hidden');
+  let save=GV.Save.get(GAME_ID);
+  if(save && state==='idle'){
+    initGame(true);
+    score=save.score||0; level=save.level||1; lives=save.lives||3;
+    speed=3.5+(level-1)*0.3; frames=0;
+  } else { initGame(); }
+  state='playing';
+  updateHUD();
+  loop();
+}
+
+function jump(){
+  if(state!=='playing') return;
+  if(player.onGround||player.jumpCount<2){
+    player.vy=-16; player.onGround=false; player.jumpCount++;
+    playJump();
+  }
+}
+
+/* INPUT */
+document.addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jump();} });
+canvas.addEventListener('pointerdown',e=>{ e.preventDefault(); jump(); });
+
+/* SOUND */
+let audioCtx=null;
+function sfx(freq,type,dur,vol=0.2){
+  try{
+    if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.connect(g);g.connect(audioCtx.destination);
+    o.frequency.value=freq;o.type=type;
+    g.gain.setValueAtTime(vol,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+dur);
+    o.start();o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+function playJump(){ sfx(440,'sine',0.15,0.15); }
+function playCoin(){ sfx(880,'sine',0.1,0.15); setTimeout(()=>sfx(1100,'sine',0.1,0.1),60); }
+function playHit(){ sfx(180,'sawtooth',0.3,0.3); }
+
+/* SPAWN */
+function spawnObstacle(){
+  let types=['cactus','bird','box'];
+  let type=types[Math.floor(Math.random()*types.length)];
+  let h=type==='bird'?30:40+Math.random()*30;
+  let yOff=type==='bird'?-H*0.15:0;
+  obstacles.push({x:W+20,y:groundY-h+yOff,w:28,h,type,color:type==='bird'?'#EF4444':'#F97316'});
+}
+function spawnCoin(){
+  coins.push({x:W+20,y:groundY-60-Math.random()*80,r:10,collected:false});
+}
+function spawnParticle(x,y,color){
+  for(let i=0;i<8;i++) particles.push({x,y,vx:(Math.random()-0.5)*6,vy:-Math.random()*6,r:4,color,life:1});
+}
+
+/* COLLISION */
+function rectsOverlap(a,b){
+  return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+function circRect(c,r){
+  return c.x+c.r>r.x&&c.x-c.r<r.x+r.w&&c.y+c.r>r.y&&c.y-c.r<r.y+r.h;
+}
+
+/* UPDATE */
+function update(){
+  frames++;
+  speed=3.5+(level-1)*0.3+frames*0.001;
+  if(frames%300===0){level++;updateHUD();}
+  score+=Math.round(speed*0.3);
+
+  /* gravity */
+  player.vy+=0.8;
+  player.y+=player.vy;
+  if(player.y>=groundY){ player.y=groundY; player.vy=0; player.onGround=true; player.jumpCount=0; }
+  player.animFrame++;
+
+  /* spawn */
+  let spawnRate=Math.max(60,120-level*5);
+  if(frames%spawnRate===0) spawnObstacle();
+  if(frames%(spawnRate*2)===0) spawnCoin();
+
+  /* obstacles */
+  obstacles=obstacles.filter(o=>{
+    o.x-=speed;
+    if(rectsOverlap({x:player.x+4,y:player.y+4,w:player.w-8,h:player.h-8},o)){
+      lives--; playHit(); spawnParticle(player.x,player.y,'#EF4444');
+      if(navigator.vibrate) navigator.vibrate([50,30,50]);
+      obstacles=obstacles.filter(x=>x!==o);
+      if(lives<=0){ gameOver(); return false; }
+    }
+    return o.x>-60;
+  });
+
+  /* coins */
+  coins=coins.filter(c=>{
+    c.x-=speed;
+    if(!c.collected&&circRect(c,{x:player.x,y:player.y,w:player.w,h:player.h})){
+      c.collected=true; score+=50; playCoin();
+      spawnParticle(c.x,c.y,'#EAB308');
+      GV.Auth.updateCoins(1);
+    }
+    return c.x>-20&&!c.collected;
+  });
+
+  /* particles */
+  particles=particles.filter(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.3; p.life-=0.04;
+    return p.life>0;
+  });
+
+  updateHUD();
+}
+
+/* DRAW */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  /* sky gradient */
+  let sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#0a0a2e'); sky.addColorStop(1,'#1a1a4e');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+
+  /* stars */
+  ctx.fillStyle='rgba(255,255,255,0.5)';
+  for(let i=0;i<30;i++){
+    let sx=(i*137+frames*0.1)%W, sy=(i*97)%(groundY*0.7);
+    ctx.beginPath(); ctx.arc(sx,sy,0.8,0,Math.PI*2); ctx.fill();
+  }
+
+  /* ground */
+  let gGrad=ctx.createLinearGradient(0,groundY,0,H);
+  gGrad.addColorStop(0,'#1a3a1a'); gGrad.addColorStop(1,'#0a1a0a');
+  ctx.fillStyle=gGrad; ctx.fillRect(0,groundY,W,H-groundY);
+  ctx.fillStyle='#22C55E'; ctx.fillRect(0,groundY,W,4);
+
+  /* moving ground lines */
+  ctx.strokeStyle='rgba(34,197,94,0.2)'; ctx.lineWidth=1;
+  for(let i=0;i<5;i++){
+    let lx=((i*100)-(frames*speed%100)+W)%W;
+    ctx.beginPath(); ctx.moveTo(lx,groundY+8); ctx.lineTo(lx,H); ctx.stroke();
+  }
+
+  /* obstacles */
+  obstacles.forEach(o=>{
+    ctx.fillStyle=o.color;
+    if(o.type==='bird'){
+      /* bird shape */
+      ctx.beginPath(); ctx.ellipse(o.x+14,o.y+15,14,8,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(o.x+24,o.y+12,5,0,Math.PI*2); ctx.fill();
+      /* wings */
+      ctx.fillStyle=o.color;
+      let flap=Math.sin(frames*0.3)*8;
+      ctx.beginPath(); ctx.moveTo(o.x+5,o.y+10); ctx.lineTo(o.x-10,o.y+flap); ctx.lineTo(o.x+5,o.y+20); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.roundRect(o.x,o.y,o.w,o.h,4); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.roundRect(o.x+3,o.y+3,o.w-6,8,2); ctx.fill();
+    }
+  });
+
+  /* coins */
+  coins.forEach(c=>{
+    let shine=Math.sin(frames*0.1+c.x)*2;
+    ctx.fillStyle='#EAB308';
+    ctx.beginPath(); ctx.arc(c.x,c.y+shine,c.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.arc(c.x-3,c.y-3+shine,3,0,Math.PI*2); ctx.fill();
+  });
+
+  /* player */
+  let px=player.x, py=player.y;
+  let bobY=player.onGround?Math.sin(frames*0.2)*2:0;
+  /* body */
+  ctx.fillStyle='#3B82F6';
+  ctx.beginPath(); ctx.roundRect(px,py+bobY,player.w,player.h,8); ctx.fill();
+  /* face */
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px+26,py+14+bobY,7,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#1E40AF'; ctx.beginPath(); ctx.arc(px+27,py+14+bobY,4,0,Math.PI*2); ctx.fill();
+  /* legs */
+  let legPhase=player.onGround?Math.sin(frames*0.4)*12:0;
+  ctx.fillStyle='#1E40AF';
+  ctx.fillRect(px+6,py+player.h+bobY,10,12+legPhase);
+  ctx.fillRect(px+20,py+player.h+bobY,10,12-legPhase);
+
+  /* particles */
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  /* score scrolling at top */
+  ctx.fillStyle='rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.roundRect(W/2-60,8,120,32,8); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 16px system-ui'; ctx.textAlign='center';
+  ctx.fillText(score.toLocaleString(),W/2,29);
+}
+
+function updateHUD(){
+  document.getElementById('hud-score').textContent=score.toLocaleString();
+  document.getElementById('hud-level').textContent='Level '+level;
+  document.getElementById('hud-lives').textContent='❤️'.repeat(lives)+'🖤'.repeat(Math.max(0,3-lives));
+}
+
+function loop(){
+  if(state!=='playing'){return;}
+  update(); draw();
+  raf=requestAnimationFrame(loop);
+}
+
+function gameOver(){
+  state='idle';
+  cancelAnimationFrame(raf);
+  GV.Save.set(GAME_ID,{score,level,lives:3,savedAt:new Date().toISOString()});
+  document.getElementById('go-score').textContent=score.toLocaleString();
+  document.getElementById('go-level').textContent='You reached Level '+level;
+  document.getElementById('gameover-overlay').classList.remove('hidden');
+}
+
+function saveAndExit(){
+  if(state==='playing'){
+    GV.Save.set(GAME_ID,{score,level,lives,savedAt:new Date().toISOString()});
+  }
+  state='idle';
+  cancelAnimationFrame(raf);
+  window.location.href='../index.html';
+}
+
+/* INIT */
+let sv=GV.Save.get(GAME_ID);
+if(sv){ document.getElementById('saved-info').style.display='block'; document.getElementById('saved-info').textContent=`▶ Resume from Level ${sv.level} · Score ${sv.score?.toLocaleString()}`; }
+initGame();
+</script>
+</body>
+</html>
