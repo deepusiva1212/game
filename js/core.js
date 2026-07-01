@@ -30,6 +30,25 @@ const GV = {
     { id:'bubblePop', title:'Bubble Pop',     icon:'🫧', desc:'Pop matching bubbles',   file:'games/bubble-pop.html',   genre:'Puzzle',   color:'#F59E0B' },
   ],
 
+  /* ── THEME ── */
+  Theme: {
+    KEY_THEME: 'gv_theme',
+    KEY_MODE: 'gv_mode',
+    THEMES: [
+      { id:'candy', name:'Candy Pop', emoji:'🍭', colors:['#FF6FA5','#C04CFF','#FFD23F'] },
+      { id:'jungle', name:'Jungle', emoji:'🦜', colors:['#34D399','#2DD4BF','#FBBF24'] },
+      { id:'space', name:'Space Buddy', emoji:'🚀', colors:['#6366F1','#22D3EE','#C084FC'] },
+    ],
+    getTheme() { return localStorage.getItem(this.KEY_THEME) || 'candy'; },
+    getMode() { return localStorage.getItem(this.KEY_MODE) || 'light'; },
+    setTheme(id) { localStorage.setItem(this.KEY_THEME, id); this.apply(); },
+    setMode(mode) { localStorage.setItem(this.KEY_MODE, mode); this.apply(); },
+    apply() {
+      document.documentElement.setAttribute('data-theme', this.getTheme());
+      document.documentElement.setAttribute('data-mode', this.getMode());
+    }
+  },
+
   /* ── AUTH ── */
   Auth: {
     getUsers() { try { return JSON.parse(localStorage.getItem(GV.KEYS.USERS)||'[]'); } catch(e){return[];} },
@@ -138,3 +157,4 @@ const GV = {
 };
 
 window.GV = GV;
+GV.Theme.apply();
