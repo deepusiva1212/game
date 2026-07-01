@@ -6,17 +6,19 @@
 
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>Tower Stack — GameVerse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="../css/global.css"/>
   <style>
-    body { background:linear-gradient(180deg,#06151f,#0a0a0a); overflow:hidden; touch-action:none; }
+    body { background: var(--bg); overflow:hidden; touch-action:none; }
     #canvas { display:block; width:100%; max-width:480px; margin:0 auto; }
     .game-ui { position:fixed; top:0; left:50%; transform:translateX(-50%); width:100%; max-width:480px; padding:14px 16px; text-align:center; pointer-events:none; }
-    .ui-score { font-size:42px; font-weight:800; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5); }
+    .ui-score { font-size:42px; font-weight:800; color:var(--text); text-shadow:0 2px 10px rgba(0,0,0,.5); }
     #back-home { position:fixed; top:10px; left:10px; z-index:100; }
-    .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(5,10,20,.88); padding:24px; }
+    .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:rgba(20,10,30,.82); padding:24px; }
     .ov-emoji { font-size:60px; }
-    .ov-title { font-size:26px; font-weight:800; color:#fff; }
-    .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#06B6D4; color:#fff; font-size:16px; font-weight:700; }
+    .ov-title { font-size:26px; font-weight:800; color:var(--text); }
+    /* play-btn handled by global */ .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background: var(--grad-primary); color:var(--text); font-size:16px; font-weight:700; }
   
     /* Kids UI upgrades */
     .play-btn {
@@ -28,14 +30,61 @@
     .play-btn:active { transform:scale(.93) translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,0.2); }
     .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:rgba(20,10,30,.82); padding:24px; backdrop-filter:blur(4px); }
     .ov-emoji { font-size:68px; animation:bounceIn .5s cubic-bezier(.34,1.56,.64,1); }
-    .ov-title { font-family:var(--font-display); font-size:28px; font-weight:800; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,0.4); }
+    .ov-title { font-family:var(--font-display); font-size:28px; font-weight:800; color:var(--text); text-shadow:0 3px 10px rgba(0,0,0,0.4); }
+
+  
+    /* ── Theme-aware upgrades ── */
+    body { font-family: var(--font-body) !important; }
+    .hud-box, .hud { background: var(--surface-solid) !important; border: 2px solid var(--border) !important; border-radius: 16px !important; }
+    .hud-label { color: var(--text3) !important; font-family: var(--font-display) !important; }
+    .hud-val { color: var(--text) !important; font-family: var(--font-display) !important; }
+    .balance-card, .q-box, .question-box, .goal-card, .combo-row, .settings-row,
+    .combo-bar, .leaderboard-wrap, .result-card, .splash-card, .shop-section,
+    .village-section, .building-card, .crop-card, .mode-card, .continue-card {
+      background: var(--surface-solid) !important;
+      border-color: var(--border) !important;
+      color: var(--text) !important;
+    }
+    .section-label, .balance-label, .hud-label, .combo-label, .q-label {
+      color: var(--text3) !important;
+    }
+    .balance-val, .big-score, .result-score, .go-score { color: var(--text) !important; }
+    .balance-sub, .stat-l, .building-level, .crop-info, .mode-desc { color: var(--text2) !important; }
+    .building-name, .crop-name, .mode-name, .cc-title, .gc-title { color: var(--text) !important; font-family: var(--font-display) !important; }
+    .win-title, .ov-title, .overlay-title { font-family: var(--font-display) !important; color: var(--text) !important; }
+    /* Buttons */
+    .spin-btn { background: var(--grad-primary) !important; border-radius: 99px !important; font-family: var(--font-display) !important; font-weight: 800 !important; box-shadow: 0 6px 0 rgba(0,0,0,0.2) !important; border: none !important; }
+    .play-btn { background: var(--grad-primary) !important; color: #fff !important; border-radius: 99px !important; font-family: var(--font-display) !important; font-weight: 800 !important; border: none !important; box-shadow: 0 6px 0 rgba(0,0,0,0.2) !important; }
+    .ctrl-btn, .ghost-btn { background: var(--surface2) !important; border: 2px solid var(--border2) !important; color: var(--text) !important; border-radius: 99px !important; font-family: var(--font-display) !important; font-weight: 700 !important; }
+    /* Shop / village cards */
+    .village-grid .building-card, .shop-grid .crop-card, .mode-grid .mode-card {
+      border: 2px solid var(--border) !important; border-radius: 18px !important;
+    }
+    .building-card:active, .crop-card:active, .mode-card:active { transform: scale(0.93) rotate(-1deg) !important; }
+    /* Tiles and letters */
+    .tile { background: var(--grad-primary) !important; color: #fff !important; }
+    .tile.empty { background: transparent !important; box-shadow: none !important; }
+    .letter-cell { background: var(--surface2) !important; color: var(--text) !important; border-radius: 8px !important; font-family: var(--font-display) !important; }
+    .letter-cell.selecting { background: var(--accent) !important; color: #fff !important; }
+    .letter-cell.found { background: rgba(52,211,153,0.25) !important; }
+    /* Card flip */
+    .card-back { background: var(--grad-primary) !important; }
+    .card.matched .card-front { background: rgba(52,211,153,0.2) !important; border-color: #34D399 !important; }
+    /* Plot / farm */
+    .plot { background: var(--surface-solid) !important; border: 2px solid var(--border) !important; border-radius: 14px !important; }
+    /* Word chips */
+    .word-chip { background: var(--surface2) !important; border: 2px solid var(--border) !important; color: var(--text2) !important; border-radius: 99px !important; }
+    .word-chip.found { background: rgba(52,211,153,0.2) !important; border-color: #34D399 !important; color: #16A34A !important; text-decoration: line-through; }
+    /* Coin kingdom */
+    .coin-result { color: var(--gold) !important; font-family: var(--font-display) !important; }
+    .result-card, .result-popup .result-card { background: var(--surface-solid) !important; border: 2px solid var(--border2) !important; border-radius: 24px !important; }
 
   </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
 <div class="game-ui"><div class="ui-score" id="ui-score">0</div></div>
-<button id="back-home" class="back-btn" onclick="saveAndExit()" style="background:rgba(0,0,0,.5);color:#fff;border-color:rgba(255,255,255,.3);">← Home</button>
+<button id="back-home" class="back-btn" onclick="saveAndExit()" style="background:rgba(0,0,0,.5);color:var(--text);border-color:rgba(255,255,255,.3);">← Home</button>
 
 <div id="start-overlay" class="overlay">
   <div class="ov-emoji">🏗️</div>
@@ -56,6 +105,12 @@
 
 <script src="../js/core.js"></script>
 <script>
+
+function getBgColor(){
+  try{ return getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()||'#0a0a14'; }
+  catch(e){ return '#0a0a14'; }
+}
+
 const GAME_ID='tower';
 const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
 let W,H,dpr;
