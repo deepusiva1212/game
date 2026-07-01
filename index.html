@@ -3,8 +3,18 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
-  <meta name="theme-color" content="#0a0a14"/>
+  <meta name="theme-color" content="#FFF5FA"/>
   <title>GameVerse — Play All Games</title>
+  <script>
+    (function(){
+      try {
+        var theme = localStorage.getItem('gv_theme') || 'candy';
+        var mode = localStorage.getItem('gv_mode') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-mode', mode);
+      } catch(e){}
+    })();
+  </script>
   <link rel="stylesheet" href="css/global.css"/>
   <style>
     body { padding-bottom:20px; }
@@ -14,34 +24,29 @@
       min-height:100vh; display:flex; flex-direction:column;
       align-items:center; justify-content:center; padding:48px 24px;
     }
-    .auth-logo-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:36px; }
+    .auth-logo-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:32px; }
     .logo-orb {
-      width:84px; height:84px; border-radius:26px;
+      width:96px; height:96px; border-radius:32px;
       background: var(--grad-primary);
       display:flex; align-items:center; justify-content:center;
-      font-size:42px; box-shadow: 0 12px 40px rgba(139,92,246,0.45);
-      animation: floatY 4s ease-in-out infinite;
-      position: relative;
-    }
-    .logo-orb::after {
-      content:''; position:absolute; inset:-12px; border-radius:32px;
-      background: var(--grad-primary); opacity:0.25; filter:blur(20px); z-index:-1;
+      font-size:50px; box-shadow: 0 14px 0 color-mix(in srgb, var(--t-grad-2) 60%, black), 0 16px 36px var(--glow);
+      animation: floatY 3.5s ease-in-out infinite;
     }
     .auth-brand {
-      font-family: var(--font-display); font-size:32px; font-weight:800; letter-spacing:-0.02em;
+      font-family: var(--font-display); font-size:36px; font-weight:800; letter-spacing:-0.01em;
       background: var(--grad-primary); -webkit-background-clip:text; background-clip:text; color:transparent;
     }
-    .auth-tagline { font-size:14px; color:var(--text2); font-weight:500; }
+    .auth-tagline { font-size:15px; color:var(--text2); font-weight:700; }
 
-    .auth-tabs { display:flex; width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:5px; gap:4px; margin-bottom:26px; backdrop-filter: blur(20px); }
-    .auth-tab { flex:1; height:42px; border:none; border-radius:12px; font-size:14px; font-weight:700; font-family:var(--font-display); background:transparent; color:var(--text2); cursor:pointer; transition:all .2s; }
-    .auth-tab.active { background: var(--grad-primary); color:#fff; box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+    .auth-tabs { display:flex; width:100%; max-width:360px; background:var(--surface3); border-radius:99px; padding:5px; gap:4px; margin-bottom:26px; }
+    .auth-tab { flex:1; height:46px; border:none; border-radius:99px; font-size:14.5px; font-weight:800; font-family:var(--font-display); background:transparent; color:var(--text2); cursor:pointer; transition:all .2s; }
+    .auth-tab.active { background: var(--grad-primary); color:#fff; box-shadow: 0 4px 14px var(--glow); }
     .auth-form { width:100%; max-width:360px; display:flex; flex-direction:column; gap:14px; }
-    .auth-divider { display:flex; align-items:center; gap:12px; color:var(--text3); font-size:12px; font-weight:600; margin: 2px 0; }
-    .auth-divider::before, .auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .auth-divider { display:flex; align-items:center; gap:12px; color:var(--text3); font-size:12.5px; font-weight:700; margin: 2px 0; }
+    .auth-divider::before, .auth-divider::after { content:''; flex:1; height:2px; background:var(--border); border-radius: 99px; }
     .remember-row { display:flex; align-items:center; gap:10px; }
-    .remember-row input { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; }
-    .remember-row label { font-size:13px; color:var(--text2); cursor:pointer; font-weight:500; }
+    .remember-row input { width:20px; height:20px; accent-color:var(--accent); cursor:pointer; }
+    .remember-row label { font-size:13.5px; color:var(--text2); cursor:pointer; font-weight:600; }
 
     /* ═══ HOME ═══ */
     #home-screen { display:none; padding-bottom:36px; }
@@ -49,136 +54,127 @@
     .top-nav {
       display:flex; align-items:center; justify-content:space-between;
       padding:16px 18px 14px; position:sticky; top:0;
-      background: rgba(10,10,20,0.75); backdrop-filter: blur(24px);
-      z-index:50; border-bottom:1px solid var(--border);
+      background: var(--surface2); backdrop-filter: blur(20px);
+      z-index:50; border-bottom:2px solid var(--border);
     }
-    .nav-brand { display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-size:19px; font-weight:800; letter-spacing:-0.01em; }
+    .nav-brand { display:flex; align-items:center; gap:9px; font-family:var(--font-display); font-size:20px; font-weight:800; }
     .nav-brand-icon {
-      width:32px; height:32px; border-radius:10px; background: var(--grad-primary);
-      display:flex; align-items:center; justify-content:center; font-size:17px;
-      box-shadow: 0 4px 14px rgba(139,92,246,0.4);
+      width:36px; height:36px; border-radius:13px; background: var(--grad-primary);
+      display:flex; align-items:center; justify-content:center; font-size:19px;
+      box-shadow: 0 3px 0 color-mix(in srgb, var(--t-grad-2) 60%, black);
     }
-    .nav-right { display:flex; align-items:center; gap:10px; }
+    .nav-right { display:flex; align-items:center; gap:9px; }
     .nav-coins {
       display:flex; align-items:center; gap:6px;
-      background: linear-gradient(135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.08));
-      border:1px solid rgba(251,191,36,0.3);
-      border-radius:99px; padding:7px 14px 7px 10px; font-size:13px; font-weight:800; color:var(--gold);
-      box-shadow: 0 2px 12px rgba(251,191,36,0.15);
+      background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08));
+      border:2px solid rgba(245,158,11,0.3);
+      border-radius:99px; padding:7px 14px 7px 10px; font-size:13.5px; font-weight:800; color:var(--gold);
+      font-family: var(--font-display);
     }
-    .nav-avatar {
-      width:38px; height:38px; border-radius:50%;
-      background: var(--surface2); border:2px solid var(--border2);
+    .nav-settings, .nav-avatar {
+      width:40px; height:40px; border-radius:50%;
+      background: var(--surface-solid); border:2px solid var(--border2);
       font-size:19px;
       display:flex; align-items:center; justify-content:center; cursor:pointer;
       transition: transform .15s, border-color .15s;
     }
-    .nav-avatar:active { transform: scale(0.92); }
-    .nav-avatar:hover { border-color: var(--accent); }
+    .nav-settings:active, .nav-avatar:active { transform: scale(0.88); }
+    .nav-settings:hover, .nav-avatar:hover { border-color: var(--accent); }
 
     /* HERO */
-    .hero { padding:26px 18px 4px; position:relative; z-index:1; }
-    .greeting { font-family:var(--font-display); font-size:26px; font-weight:800; margin-bottom:5px; letter-spacing:-0.01em; }
-    .greeting .wave { display:inline-block; animation: wave 2s ease-in-out infinite; transform-origin: 70% 70%; }
-    @keyframes wave { 0%,100%{transform:rotate(0deg);} 15%{transform:rotate(14deg);} 30%{transform:rotate(-8deg);} 45%{transform:rotate(14deg);} 60%{transform:rotate(0deg);} }
+    .hero { padding:28px 18px 4px; position:relative; z-index:1; display: flex; align-items: center; gap: 14px; }
+    .hero-mascot {
+      font-size: 52px; animation: wiggle 3s ease-in-out infinite;
+      filter: drop-shadow(0 6px 10px var(--shadow-color));
+    }
+    .greeting { font-family:var(--font-display); font-size:24px; font-weight:800; margin-bottom:4px; }
     .greeting span.name { background: var(--grad-primary); -webkit-background-clip:text; background-clip:text; color:transparent; }
-    .hero-sub { font-size:14px; color:var(--text2); margin-bottom:6px; font-weight:500; }
+    .hero-sub { font-size:14px; color:var(--text2); font-weight:600; }
 
     /* CONTINUE PLAYING */
     .section-header { display:flex; align-items:center; justify-content:space-between; padding:0 18px; margin-bottom:12px; }
-    .section-title { font-family:var(--font-display); font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text3); display:flex; align-items:center; gap:7px; }
-    .section-title .dot { width:6px; height:6px; border-radius:50%; background: var(--grad-primary); }
+    .section-title { font-family:var(--font-display); font-size:14px; font-weight:800; color:var(--text2); display:flex; align-items:center; gap:7px; }
     .continue-scroll { display:flex; gap:12px; overflow-x:auto; padding:2px 18px 8px; scrollbar-width:none; }
     .continue-scroll::-webkit-scrollbar { display:none; }
     .continue-card {
-      min-width:172px; background: var(--surface); border:1px solid var(--border);
+      min-width:172px; background: var(--surface-solid); border:2px solid var(--border);
       border-radius:var(--radius); padding:16px; cursor:pointer;
-      transition: transform .15s cubic-bezier(.2,.8,.2,1), border-color .15s, box-shadow .15s;
-      flex-shrink:0; backdrop-filter: blur(16px); position: relative; overflow: hidden;
+      transition: transform .15s cubic-bezier(.34,1.56,.64,1), border-color .15s;
+      flex-shrink:0; position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
     }
-    .continue-card::before {
-      content:''; position:absolute; top:0; left:0; right:0; height:3px;
-      background: var(--card-color, var(--grad-primary));
-    }
-    .continue-card:active { transform:scale(.95); }
-    .continue-card:hover { border-color:var(--border2); box-shadow: var(--shadow-md); }
-    .cc-icon { font-size:30px; margin-bottom:10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
-    .cc-title { font-size:14px; font-weight:700; margin-bottom:3px; font-family: var(--font-display); }
-    .cc-meta { font-size:11px; color:var(--text3); font-weight:500; }
-    .cc-progress { height:4px; background:var(--surface3); border-radius:99px; margin-top:10px; overflow:hidden; }
+    .continue-card::before { content:''; position:absolute; top:0; left:0; right:0; height:5px; background: var(--card-color, var(--grad-primary)); }
+    .continue-card:active { transform:scale(.93); }
+    .cc-icon { font-size:32px; margin-bottom:10px; }
+    .cc-title { font-size:14.5px; font-weight:800; margin-bottom:3px; font-family: var(--font-display); }
+    .cc-meta { font-size:11.5px; color:var(--text3); font-weight:600; }
+    .cc-progress { height:6px; background:var(--surface3); border-radius:99px; margin-top:10px; overflow:hidden; }
     .cc-progress-fill { height:100%; border-radius:99px; transition: width .3s; }
 
     /* FILTER TABS */
     .filter-tabs { display:flex; gap:8px; overflow-x:auto; padding:0 18px; scrollbar-width:none; margin-bottom:16px; }
     .filter-tabs::-webkit-scrollbar { display:none; }
     .filter-tab {
-      flex-shrink:0; height:36px; padding:0 16px; border-radius:99px;
-      border:1px solid var(--border); background: var(--surface);
-      color:var(--text2); font-size:12.5px; font-weight:700; font-family: var(--font-display); cursor:pointer;
-      transition: all .18s; backdrop-filter: blur(12px);
+      flex-shrink:0; height:38px; padding:0 18px; border-radius:99px;
+      border:2px solid var(--border); background: var(--surface-solid);
+      color:var(--text2); font-size:13px; font-weight:800; font-family: var(--font-display); cursor:pointer;
+      transition: all .18s;
     }
-    .filter-tab.active { background: var(--grad-primary); border-color:transparent; color:#fff; box-shadow: 0 4px 16px rgba(139,92,246,0.35); }
-    .filter-tab:not(.active):hover { background: var(--surface2); color: var(--text); }
+    .filter-tab.active { background: var(--grad-primary); border-color:transparent; color:#fff; box-shadow: 0 4px 14px var(--glow); }
 
     /* GAME GRID */
-    .game-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 18px; }
+    .game-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; padding:0 18px; }
     .game-card {
-      background: var(--surface); border:1px solid var(--border);
+      background: var(--surface-solid); border:2px solid var(--border);
       border-radius:var(--radius); padding:18px 16px; cursor:pointer;
-      transition: transform .18s cubic-bezier(.2,.8,.2,1), border-color .2s, box-shadow .2s;
+      transition: transform .18s cubic-bezier(.34,1.56,.64,1), border-color .2s, box-shadow .2s;
       display:flex; flex-direction:column; gap:10px;
-      backdrop-filter: blur(16px); position: relative; overflow: hidden;
+      position: relative; overflow: hidden; box-shadow: var(--shadow-sm);
     }
-    .game-card::before {
-      content:''; position:absolute; inset:0; opacity:0; transition: opacity .25s;
-      background: radial-gradient(circle at 30% 0%, var(--card-glow, rgba(139,92,246,0.15)), transparent 70%);
-      pointer-events: none;
-    }
-    .game-card:active { transform:scale(.95); }
-    .game-card:hover { border-color: var(--border2); box-shadow: var(--shadow-md); }
-    .game-card:hover::before { opacity: 1; }
-    .gc-top { display:flex; align-items:flex-start; justify-content:space-between; position: relative; z-index: 1; }
+    .game-card:active { transform:scale(.93) rotate(-1deg); }
+    .game-card:hover { border-color: var(--card-border, var(--accent)); box-shadow: var(--shadow-md); }
+    .gc-top { display:flex; align-items:flex-start; justify-content:space-between; }
     .gc-icon-wrap {
-      width:52px; height:52px; border-radius:16px;
-      display:flex; align-items:center; justify-content:center; font-size:28px;
-      background: var(--icon-bg, rgba(139,92,246,0.12));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      width:54px; height:54px; border-radius:18px;
+      display:flex; align-items:center; justify-content:center; font-size:30px;
+      background: var(--icon-bg, rgba(255,111,165,0.15));
     }
     .gc-saved {
-      font-size:9px; font-weight:800; letter-spacing:.04em; padding:3px 8px; border-radius:99px;
-      background: rgba(52,211,153,0.15); color:#6EE7B7; border:1px solid rgba(52,211,153,0.3);
+      font-size:9.5px; font-weight:800; padding:4px 9px; border-radius:99px;
+      background: rgba(52,211,153,0.18); color:#16A34A; border:2px solid rgba(52,211,153,0.3);
       display:flex; align-items:center; gap:3px;
     }
-    .gc-saved::before { content:''; width:5px; height:5px; border-radius:50%; background:#34D399; box-shadow: 0 0 6px #34D399; }
-    .gc-title { font-size:15px; font-weight:700; font-family: var(--font-display); position: relative; z-index: 1; }
-    .gc-desc { font-size:11.5px; color:var(--text3); line-height:1.4; position: relative; z-index: 1; }
-    .gc-genre { font-size:10px; font-weight:700; padding:3px 9px; border-radius:99px; align-self:flex-start; position: relative; z-index: 1; }
+    .gc-saved::before { content:''; width:5px; height:5px; border-radius:50%; background:#22C55E; }
+    .gc-title { font-size:15.5px; font-weight:800; font-family: var(--font-display); }
+    .gc-desc { font-size:11.5px; color:var(--text3); line-height:1.4; font-weight:600; }
+    .gc-genre { font-size:10px; font-weight:800; padding:4px 10px; border-radius:99px; align-self:flex-start; }
 
     /* PROFILE MODAL */
     .profile-header { display:flex; align-items:center; gap:16px; }
     .profile-avatar-big {
-      width:64px; height:64px; border-radius:20px; font-size:34px;
-      background: var(--surface2); border: 2px solid var(--border2);
+      width:68px; height:68px; border-radius:22px; font-size:36px;
+      background: var(--surface3); border: 3px solid var(--border2);
       display:flex; align-items:center; justify-content:center;
     }
-    .profile-stat { display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--border); }
+    .profile-stat { display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:2px solid var(--border); }
     .profile-stat:last-child { border-bottom:none; }
-    .profile-stat-label { font-size:13.5px; color:var(--text2); font-weight:600; display:flex; align-items:center; gap:8px; }
-    .profile-stat-val { font-size:15px; font-weight:800; font-family: var(--font-display); }
+    .profile-stat-label { font-size:14px; color:var(--text2); font-weight:700; display:flex; align-items:center; gap:8px; }
+    .profile-stat-val { font-size:16px; font-weight:800; font-family: var(--font-display); }
     .info-banner {
-      background: var(--grad-primary-soft); border:1px solid var(--border-glow);
-      border-radius:var(--rad-sm); padding:13px 14px; font-size:12.5px; color:var(--text2); line-height:1.6;
+      background: var(--grad-primary-soft); border:2px solid var(--border);
+      border-radius:var(--rad-sm); padding:13px 14px; font-size:12.5px; color:var(--text2); line-height:1.6; font-weight:600;
       display: flex; gap: 10px; align-items: flex-start;
     }
 
-    /* EMPTY STATE */
-    .empty-hint { text-align:center; padding:18px 20px; color:var(--text3); font-size:12.5px; font-weight:500; }
+    /* SETTINGS MODAL */
+    .theme-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
 
+    .empty-hint { text-align:center; padding:18px 20px; color:var(--text3); font-size:12.5px; font-weight:600; }
     #gv-toast { bottom:24px; }
 
     @media (max-width: 360px) {
-      .game-grid { gap: 9px; padding: 0 14px; }
+      .game-grid { gap: 10px; padding: 0 14px; }
       .game-card { padding: 14px 12px; }
+      .theme-grid { gap: 8px; }
     }
   </style>
 </head>
@@ -188,17 +184,16 @@
 <!-- ═══ AUTH SCREEN ═══ -->
 <div id="auth-screen">
   <div class="auth-logo-wrap">
-    <div class="logo-orb">🎮</div>
+    <div class="logo-orb" id="splash-mascot">🍭</div>
     <div class="auth-brand">GameVerse</div>
-    <div class="auth-tagline">12 games · 1 account · infinite fun</div>
+    <div class="auth-tagline">12 games · 1 account · so much fun!</div>
   </div>
 
   <div class="auth-tabs">
     <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
-    <button class="auth-tab" onclick="switchTab('register')">Create Account</button>
+    <button class="auth-tab" onclick="switchTab('register')">New Player</button>
   </div>
 
-  <!-- LOGIN FORM -->
   <div id="login-form" class="auth-form">
     <div class="field">
       <label>Username</label>
@@ -213,13 +208,12 @@
       <input type="checkbox" id="li-remember" checked/>
       <label for="li-remember">Keep me signed in</label>
     </div>
-    <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+    <button class="btn btn-primary" onclick="doLogin()">Let's Play!</button>
     <div class="auth-divider">or</div>
     <button class="btn btn-ghost" onclick="switchTab('register')">Create a new account</button>
-    <button class="btn btn-ghost btn-sm" onclick="guestPlay()" style="width:100%;height:42px;font-size:13px;">Continue as guest</button>
+    <button class="btn btn-ghost btn-sm" onclick="guestPlay()" style="width:100%;height:46px;font-size:13.5px;">Continue as guest</button>
   </div>
 
-  <!-- REGISTER FORM -->
   <div id="register-form" class="auth-form hidden">
     <div class="field">
       <label>Choose Avatar</label>
@@ -248,20 +242,24 @@
 <div id="home-screen">
 
   <div class="top-nav">
-    <div class="nav-brand"><div class="nav-brand-icon">🎮</div>GameVerse</div>
+    <div class="nav-brand"><div class="nav-brand-icon" id="nav-mascot">🍭</div>GameVerse</div>
     <div class="nav-right">
       <div class="nav-coins" id="nav-coins">🪙 100</div>
+      <div class="nav-settings" onclick="showSettings()">⚙️</div>
       <div class="nav-avatar" id="nav-avatar" onclick="showProfile()">😀</div>
     </div>
   </div>
 
   <div class="hero">
-    <div class="greeting"><span class="wave">👋</span> Hey, <span class="name" id="hero-name">Player</span></div>
-    <div class="hero-sub">Ready to play? Pick a game below.</div>
+    <div class="hero-mascot" id="hero-mascot">🍭</div>
+    <div>
+      <div class="greeting">Hey, <span class="name" id="hero-name">Player</span>! 👋</div>
+      <div class="hero-sub">Ready to play? Pick a game below.</div>
+    </div>
   </div>
 
   <div id="continue-section" style="display:none; margin-bottom:24px; margin-top:18px;">
-    <div class="section-header"><div class="section-title"><span class="dot"></span>Continue Playing</div></div>
+    <div class="section-header"><div class="section-title">⭐ Continue Playing</div></div>
     <div class="continue-scroll" id="continue-scroll"></div>
   </div>
 
@@ -279,8 +277,8 @@
     <div class="profile-header">
       <div class="profile-avatar-big" id="pm-avatar">😀</div>
       <div>
-        <div style="font-size:19px;font-weight:800;font-family:var(--font-display);" id="pm-username">Player</div>
-        <div style="font-size:12px;color:var(--text3);font-weight:500;">Local Account · v1.0</div>
+        <div style="font-size:20px;font-weight:800;font-family:var(--font-display);" id="pm-username">Player</div>
+        <div style="font-size:12.5px;color:var(--text3);font-weight:600;">Local Account · v1.0</div>
       </div>
     </div>
     <div class="divider"></div>
@@ -297,7 +295,28 @@
       <span>Your account is stored locally on this device. Google Sign-In and cloud sync coming in the next update!</span>
     </div>
     <button type="button" class="btn btn-ghost" onclick="doLogout(); return false;">Sign out</button>
-    <button type="button" class="btn btn-ghost btn-sm" style="width:100%;height:38px;" onclick="closeProfile(); return false;">Close</button>
+    <button type="button" class="btn btn-ghost btn-sm" style="width:100%;height:42px;" onclick="closeProfile(); return false;">Close</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target.id==='settings-modal'){closeSettings();}">
+  <div class="modal" onclick="event.stopPropagation();">
+    <div style="font-size:20px;font-weight:800;font-family:var(--font-display);">🎨 Pick your style!</div>
+
+    <div class="theme-grid" id="theme-grid"></div>
+
+    <div class="divider"></div>
+
+    <div class="mode-toggle-row">
+      <span style="font-size:14px;font-weight:700;color:var(--text2);">Brightness</span>
+      <div class="mode-toggle">
+        <button class="mode-toggle-btn" id="mode-light-btn" onclick="setMode('light')">☀️ Light</button>
+        <button class="mode-toggle-btn" id="mode-dark-btn" onclick="setMode('dark')">🌙 Dark</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-ghost btn-sm" style="width:100%;height:42px;margin-top:6px;" onclick="closeSettings(); return false;">Close</button>
   </div>
 </div>
 
@@ -311,14 +330,23 @@ let selectedAvatar = '😀';
 let activeFilter = 'All';
 
 const GENRE_GRADIENTS = {
-  Casual:'linear-gradient(135deg,#3B82F6,#22D3EE)', Action:'linear-gradient(135deg,#EF4444,#F97316)',
-  Puzzle:'linear-gradient(135deg,#A855F7,#EC4899)', Strategy:'linear-gradient(135deg,#22C55E,#14B8A6)',
-  Physics:'linear-gradient(135deg,#F97316,#EAB308)', Memory:'linear-gradient(135deg,#14B8A6,#3B82F6)',
-  Classic:'linear-gradient(135deg,#84CC16,#22C55E)', Word:'linear-gradient(135deg,#A855F7,#6366F1)',
-  Skill:'linear-gradient(135deg,#06B6D4,#3B82F6)'
+  Casual:'linear-gradient(135deg,#FF6FA5,#C04CFF)', Action:'linear-gradient(135deg,#FB7185,#F97316)',
+  Puzzle:'linear-gradient(135deg,#C084FC,#EC4899)', Strategy:'linear-gradient(135deg,#34D399,#2DD4BF)',
+  Physics:'linear-gradient(135deg,#F97316,#FBBF24)', Memory:'linear-gradient(135deg,#2DD4BF,#6366F1)',
+  Classic:'linear-gradient(135deg,#A3E635,#34D399)', Word:'linear-gradient(135deg,#C084FC,#818CF8)',
+  Skill:'linear-gradient(135deg,#22D3EE,#6366F1)'
+};
+const GENRE_BG = {
+  Casual:'rgba(255,111,165,0.15)', Action:'rgba(251,113,133,0.15)', Puzzle:'rgba(192,76,255,0.15)',
+  Strategy:'rgba(52,211,153,0.15)', Physics:'rgba(249,115,22,0.15)', Memory:'rgba(45,212,191,0.15)',
+  Classic:'rgba(163,230,53,0.15)', Word:'rgba(192,132,252,0.15)', Skill:'rgba(34,211,238,0.15)'
+};
+const GENRE_TEXT = {
+  Casual:'#E0367E', Action:'#E11D48', Puzzle:'#9333EA', Strategy:'#16A34A', Physics:'#C2410C',
+  Memory:'#0F766E', Classic:'#65A30D', Word:'#7C3AED', Skill:'#0E7490'
 };
 
-function toast(msg, dur=2500) {
+function toast(msg, dur=2200) {
   let t=document.getElementById('gv-toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), dur);
@@ -357,7 +385,7 @@ function doRegister() {
   let res=GV.Auth.register(u,p,selectedAvatar);
   if (!res.ok) { err.textContent=res.msg; err.classList.remove('hidden'); return; }
   GV.Auth.login(u,p,true);
-  toast('Account created! Welcome, '+u+'!');
+  toast('Account created! Welcome, '+u+'! 🎉');
   showHome(res.user);
 }
 
@@ -404,15 +432,16 @@ function buildGameGrid() {
   grid.innerHTML=games.map(g=>{
     let save=saves[g.id];
     let savedBadge=save?`<span class="gc-saved">SAVED</span>`:'';
-    let grad=GENRE_GRADIENTS[g.genre]||'linear-gradient(135deg,#8B5CF6,#22D3EE)';
-    return `<div class="game-card" style="--card-glow:${g.color}33;" onclick="launchGame('${g.file}','${g.id}','${g.title}')">
+    let bg=GENRE_BG[g.genre]||'rgba(255,111,165,0.15)';
+    let txt=GENRE_TEXT[g.genre]||'#E0367E';
+    return `<div class="game-card" style="--icon-bg:${bg}; --card-border:${txt};" onclick="launchGame('${g.file}','${g.id}','${g.title}')">
       <div class="gc-top">
-        <div class="gc-icon-wrap" style="--icon-bg:${g.color}1f;">${g.icon}</div>
+        <div class="gc-icon-wrap">${g.icon}</div>
         ${savedBadge}
       </div>
       <div class="gc-title">${g.title}</div>
       <div class="gc-desc">${g.desc}</div>
-      <div class="gc-genre" style="background:${g.color}22;color:${g.color};border:1px solid ${g.color}40;">${g.genre}</div>
+      <div class="gc-genre" style="background:${bg};color:${txt};">${g.genre}</div>
     </div>`;
   }).join('');
 }
@@ -427,7 +456,7 @@ function buildContinueSection() {
     let game=GV.GAMES.find(g=>g.id===gid);
     if (!game) return '';
     let pct=Math.min(100, Math.round(((save.level||1)/20)*100));
-    let grad=GENRE_GRADIENTS[game.genre]||'linear-gradient(135deg,#8B5CF6,#22D3EE)';
+    let grad=GENRE_GRADIENTS[game.genre]||'var(--grad-primary)';
     return `<div class="continue-card" style="--card-color:${grad};" onclick="launchGame('${game.file}','${game.id}','${game.title}')">
       <div class="cc-icon">${game.icon}</div>
       <div class="cc-title">${game.title}</div>
@@ -453,12 +482,51 @@ function showProfile() {
   document.getElementById('pm-saves').textContent=Object.keys(GV.Save.getAllForUser()).length;
   document.getElementById('profile-modal').classList.remove('hidden');
 }
-function closeProfile() {
-  document.getElementById('profile-modal').classList.add('hidden');
+function closeProfile() { document.getElementById('profile-modal').classList.add('hidden'); }
+
+/* ── SETTINGS / THEME ── */
+function buildThemeGrid() {
+  let grid=document.getElementById('theme-grid');
+  let current=GV.Theme.getTheme();
+  grid.innerHTML=GV.Theme.THEMES.map(t=>`
+    <div class="theme-opt${t.id===current?' selected':''}" id="theme-opt-${t.id}" onclick="selectTheme('${t.id}')">
+      <div class="theme-swatch" style="background:linear-gradient(135deg,${t.colors[0]},${t.colors[1]},${t.colors[2]});"></div>
+      <div class="theme-opt-name">${t.emoji} ${t.name}</div>
+    </div>
+  `).join('');
 }
+function selectTheme(id) {
+  GV.Theme.setTheme(id);
+  document.querySelectorAll('.theme-opt').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('theme-opt-'+id).classList.add('selected');
+  updateMascots();
+}
+function setMode(mode) {
+  GV.Theme.setMode(mode);
+  updateModeButtons();
+}
+function updateModeButtons() {
+  let mode=GV.Theme.getMode();
+  document.getElementById('mode-light-btn').classList.toggle('active', mode==='light');
+  document.getElementById('mode-dark-btn').classList.toggle('active', mode==='dark');
+}
+function updateMascots() {
+  let theme=GV.Theme.THEMES.find(t=>t.id===GV.Theme.getTheme());
+  let emoji=theme?theme.emoji:'🍭';
+  let m1=document.getElementById('hero-mascot'); if(m1) m1.textContent=emoji;
+  let m2=document.getElementById('nav-mascot'); if(m2) m2.textContent=emoji;
+  let m3=document.getElementById('splash-mascot'); if(m3) m3.textContent=emoji;
+}
+function showSettings() {
+  buildThemeGrid();
+  updateModeButtons();
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
 
 /* INIT */
 buildAvatarGrid();
+updateMascots();
 let existing=GV.Auth.current();
 if (existing) showHome(existing);
 </script>
