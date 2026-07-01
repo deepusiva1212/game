@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
+  <script>(function(){try{var t=localStorage.getItem('gv_theme')||'candy';var m=localStorage.getItem('gv_mode')||'light';document.documentElement.setAttribute('data-theme',t);document.documentElement.setAttribute('data-mode',m);}catch(e){}})();</script>
+
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>Card Flip — GameVerse</title>
   <link rel="stylesheet" href="../css/global.css"/>
   <style>
     body { background:#0a1818; padding-bottom:24px; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; }
+    /* topbar now in global.css */
     .hud { display:flex; justify-content:space-between; padding:0 16px; margin-bottom:16px; gap:8px; }
     .hud-box { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px; text-align:center; }
     .hud-label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text3); }
@@ -37,10 +39,23 @@
     .win-emoji { font-size:60px; }
     .win-title { font-size:26px; font-weight:800; }
     .play-btn { width:100%; max-width:300px; height:50px; border-radius:14px; border:none; background:#14B8A6; color:#fff; font-size:16px; font-weight:700; }
+  
+    /* Kids UI upgrades */
+    .play-btn {
+      width:100%; max-width:320px; height:56px; border-radius:99px;
+      border:none; font-family:var(--font-display); font-size:17px; font-weight:800;
+      cursor:pointer; transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+      box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+    }
+    .play-btn:active { transform:scale(.93) translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,0.2); }
+    .overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:rgba(20,10,30,.82); padding:24px; backdrop-filter:blur(4px); }
+    .ov-emoji { font-size:68px; animation:bounceIn .5s cubic-bezier(.34,1.56,.64,1); }
+    .ov-title { font-family:var(--font-display); font-size:28px; font-weight:800; color:#fff; text-shadow:0 3px 10px rgba(0,0,0,0.4); }
+
   </style>
 </head>
 <body>
-<div class="topbar">
+<div class="game-topbar">
   <button class="back-btn" onclick="saveAndExit()">← Home</button>
   <div style="font-weight:700;">🃏 Card Flip</div>
   <div style="width:70px;"></div>
